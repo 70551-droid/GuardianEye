@@ -1,0 +1,23 @@
+# Build outputs
+bin/
+obj/
+
+# SQLite databases
+*.db
+
+# Logs
+*.log
+
+# Screenshots
+Screenshots/
+
+# User settings
+*.userosscache
+*.sln.docstates
+
+# Visual Studio
+.vs/
+*.suo
+*.user
+*.cache
+*.csr
