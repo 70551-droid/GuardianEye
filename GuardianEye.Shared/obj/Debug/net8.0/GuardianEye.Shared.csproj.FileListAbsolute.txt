@@ -1,0 +1,11 @@
+C:\70551-droid\GuardianEye\GuardianEye.Shared\bin\Debug\net8.0\GuardianEye.Shared.deps.json
+C:\70551-droid\GuardianEye\GuardianEye.Shared\bin\Debug\net8.0\GuardianEye.Shared.dll
+C:\70551-droid\GuardianEye\GuardianEye.Shared\bin\Debug\net8.0\GuardianEye.Shared.pdb
+C:\70551-droid\GuardianEye\GuardianEye.Shared\obj\Debug\net8.0\GuardianEye.Shared.GeneratedMSBuildEditorConfig.editorconfig
+C:\70551-droid\GuardianEye\GuardianEye.Shared\obj\Debug\net8.0\GuardianEye.Shared.AssemblyInfoInputs.cache
+C:\70551-droid\GuardianEye\GuardianEye.Shared\obj\Debug\net8.0\GuardianEye.Shared.AssemblyInfo.cs
+C:\70551-droid\GuardianEye\GuardianEye.Shared\obj\Debug\net8.0\GuardianEye.Shared.csproj.CoreCompileInputs.cache
+C:\70551-droid\GuardianEye\GuardianEye.Shared\obj\Debug\net8.0\GuardianEye.Shared.dll
+C:\70551-droid\GuardianEye\GuardianEye.Shared\obj\Debug\net8.0\refint\GuardianEye.Shared.dll
+C:\70551-droid\GuardianEye\GuardianEye.Shared\obj\Debug\net8.0\GuardianEye.Shared.pdb
+C:\70551-droid\GuardianEye\GuardianEye.Shared\obj\Debug\net8.0\ref\GuardianEye.Shared.dll

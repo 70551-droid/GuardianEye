@@ -1,5 +1,6 @@
 using GuardianEye.Shared.Dtos;
 using System.Net.Http.Json;
+using System.Net.Http;
 
 namespace GuardianEye.Client.Services.Api
 {
