@@ -10,7 +10,7 @@ namespace GuardianEye
 {
     public partial class App : Application
     {
-        private IHost? _host;
+        internal IHost? _host;
         private SessionEnforcementService? _enforcement;
 
         protected override async void OnStartup(StartupEventArgs e)

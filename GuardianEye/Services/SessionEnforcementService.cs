@@ -1,7 +1,9 @@
-using System.Timers;
+using System;
+using System.Threading.Tasks;
 using GuardianEye.Data;
 using GuardianEye.Helpers;
 using GuardianEye.Models;
+using Timer = System.Timers.Timer;
 
 namespace GuardianEye.Services
 {
@@ -25,7 +27,7 @@ namespace GuardianEye.Services
 
         public void StartEnforcement()
         {
-            _enforcementTimer = new Timer(5000); // Check every 5 seconds
+            _enforcementTimer = new Timer(5000);
             _enforcementTimer.Elapsed += async (s, e) => await EnforceSessionsAsync();
             _enforcementTimer.Start();
 
@@ -150,7 +152,7 @@ namespace GuardianEye.Services
         {
             try
             {
-                _midnightResetTimer = new Timer(60000); // Check every minute
+                _midnightResetTimer = new Timer(60000);
                 _midnightResetTimer.Elapsed += (s, e) =>
                 {
                     var now = DateTime.UtcNow;

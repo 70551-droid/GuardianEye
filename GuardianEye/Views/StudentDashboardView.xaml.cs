@@ -7,13 +7,12 @@ namespace GuardianEye.Views
         public StudentDashboardView()
         {
             InitializeComponent();
-        }
-
-        private void Logout_Click(object sender, RoutedEventArgs e)
-        {
-            var loginWindow = new LoginWindow();
-            loginWindow.Show();
-            Close();
+            Closing += (s, e) =>
+            {
+                if (DataContext is CommunityToolkit.Mvvm.ComponentModel.ObservableObject)
+                {
+                }
+            };
         }
     }
 }

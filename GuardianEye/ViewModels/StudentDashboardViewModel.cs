@@ -20,6 +20,39 @@ namespace GuardianEye.ViewModels
         private readonly User _currentUser;
         private readonly DispatcherTimer? _timer;
 
+        public int UserId => _currentUser.Id;
+
+        [RelayCommand]
+        private async Task LogoutAsync()
+        {
+            try
+            {
+                var sessions = await _sessionService.GetUserSessionsAsync(_currentUser.Id);
+                var activeSession = sessions.FirstOrDefault(s => s.Status == "Active");
+                if (activeSession != null)
+                {
+                    await _sessionService.EndSessionAsync(activeSession.Id);
+                }
+
+                await _sessionService.EndSessionAsync(_currentUser.Id);
+                await _authService.LogoutAsync(_currentUser.Id);
+                await _db!.ExecuteAsync(
+                    "UPDATE Users SET IsLoggedIn = 0, SessionEndTime = NULL WHERE Id = @Id",
+                    new { _currentUser.Id });
+                Helpers.Logging.Info($"Student {_currentUser.Username} logged out manually");
+            }
+            catch (Exception ex)
+            {
+                Helpers.Logging.Error("Error during student logout", ex);
+            }
+        }
+
+        [RelayCommand]
+        private async Task ForceLogoutAsync()
+        {
+            await LogoutAsync();
+        }
+
         [ObservableProperty]
         private string _welcomeMessage = "";
 
