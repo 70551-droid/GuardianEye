@@ -12,7 +12,7 @@ namespace GuardianEye.ViewModels
         private readonly IAuthService _authService;
         private readonly ISessionService _sessionService;
         private readonly User _currentUser;
-        private readonly DispatcherTimer _timer;
+        private DispatcherTimer? _timer;
 
         [ObservableProperty]
         private string _welcomeMessage = "";

@@ -8,7 +8,6 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <AssemblyName>GuardianEye</AssemblyName>
     <RootNamespace>GuardianEye</RootNamespace>
-    <ApplicationIcon>Resources\icon.ico</ApplicationIcon>
     <StartupObject>GuardianEye.App</StartupObject>
     <PlatformTarget>AnyCPU</PlatformTarget>
   </PropertyGroup>

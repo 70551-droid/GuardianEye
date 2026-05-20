@@ -26,7 +26,6 @@ namespace GuardianEye.Helpers
                         rollingInterval: RollingInterval.Day,
                         retainedFileCountLimit: 30,
                         outputTemplate: "{Timestamp:yyyy-MM-dd HH:mm:ss.fff} [{Level:u3}] {Message:lj}{NewLine}{Exception}")
-                    .WriteTo.Debug()
                     .CreateLogger();
                 return _logger;
             }

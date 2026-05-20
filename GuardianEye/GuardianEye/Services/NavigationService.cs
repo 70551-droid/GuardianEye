@@ -1,5 +1,7 @@
 using System.Windows;
 using System.Windows.Controls;
+using GuardianEye.ViewModels;
+using GuardianEye.Views;
 
 namespace GuardianEye.Services
 {
@@ -19,9 +21,9 @@ namespace GuardianEye.Services
 
         public NavigationService()
         {
-            _viewMapping[typeof(LoginViewModel)] = typeof(Views.LoginWindow);
-            _viewMapping[typeof(AdminDashboardViewModel)] = typeof(Views.AdminDashboardView);
-            _viewMapping[typeof(StudentDashboardViewModel)] = typeof(Views.StudentDashboardView);
+            _viewMapping[typeof(GuardianEye.ViewModels.LoginViewModel)] = typeof(GuardianEye.Views.LoginWindow);
+            _viewMapping[typeof(GuardianEye.ViewModels.AdminDashboardViewModel)] = typeof(GuardianEye.Views.AdminDashboardView);
+            _viewMapping[typeof(GuardianEye.ViewModels.StudentDashboardViewModel)] = typeof(GuardianEye.Views.StudentDashboardView);
         }
 
         public void NavigateTo<T>() where T : class
@@ -37,8 +39,6 @@ namespace GuardianEye.Services
             var view = Activator.CreateInstance(viewType);
             if (view is Window window)
             {
-                if (CurrentFrame.NavigationService?.Content is Window currentWindow)
-                    currentWindow.Close();
                 window.Show();
             }
             else if (view is UserControl control)

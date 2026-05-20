@@ -1,7 +1,6 @@
 using GuardianEye.Data;
 using GuardianEye.Helpers;
 using GuardianEye.Models;
-using BCrypt.Net;
 
 namespace GuardianEye.Services
 {
@@ -27,7 +26,7 @@ namespace GuardianEye.Services
                 if (user == null)
                     return new AuthResult { Success = false, ErrorMessage = "Invalid username or password" };
 
-                if (!BCrypt.Verify(password, user.PasswordHash))
+                if (!BCrypt.Net.BCrypt.Verify(password, user.PasswordHash))
                     return new AuthResult { Success = false, ErrorMessage = "Invalid username or password" };
 
                 if (user.IsLocked)
@@ -105,7 +104,7 @@ namespace GuardianEye.Services
 
                 if (existing > 0) return false;
 
-                user.PasswordHash = BCrypt.HashPassword(rawPassword);
+                user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(rawPassword);
                 user.CreatedAt = DateTime.UtcNow;
 
                 var result = await _db.ExecuteAsync(
