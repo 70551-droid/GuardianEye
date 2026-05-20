@@ -13,25 +13,38 @@
             <Grid Margin="30">
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
                     <RowDefinition Height="*"/>
                     <RowDefinition Height="Auto"/>
                 </Grid.RowDefinitions>
 
                 <StackPanel Grid.Row="0" HorizontalAlignment="Right">
-                    <Button Content="Logout" Style="{StaticResource SmallButton}"/>
+                    <Button Content="Logout" Style="{StaticResource SmallButton}" Click="Logout_Click"/>
                 </StackPanel>
 
-                <StackPanel Grid.Row="1" VerticalAlignment="Center">
-                    <TextBlock Text="{Binding WelcomeMessage}" FontSize="28" 
-                               FontWeight="Bold" Foreground="#00D4FF" HorizontalAlignment="Center"/>
-                    
-                    <Border Background="#2D2D44" CornerRadius="10" Padding="30" Margin="0,30,0,0">
+                <TextBlock Grid.Row="1" Text="{Binding WelcomeMessage}" FontSize="28" 
+                           FontWeight="Bold" Foreground="#00D4FF" HorizontalAlignment="Center"
+                           Margin="0,0,0,10"/>
+
+                <StackPanel Grid.Row="2" VerticalAlignment="Center">
+                    <Border Background="#2D2D44" CornerRadius="10" Padding="30">
                         <StackPanel>
-                            <TextBlock Text="{Binding RemainingTimeText}" FontSize="48" 
-                                       FontWeight="Bold" Foreground="#FFFFFF" HorizontalAlignment="Center"/>
+                            <TextBlock Text="{Binding SessionStatus}" FontSize="14" 
+                                       Foreground="#888888" HorizontalAlignment="Center"
+                                       Margin="0,0,0,10"/>
+
+                            <TextBlock Text="{Binding RemainingTimeText}" FontSize="56" 
+                                       Foreground="{Binding TimeDisplayColor}"
+                                       FontWeight="Bold" HorizontalAlignment="Center"/>
+
+                            <TextBlock Text="{Binding WarningMessage}" FontSize="16" 
+                                       Foreground="#FF5555" HorizontalAlignment="Center"
+                                       Margin="0,5,0,0"
+                                       Visibility="{Binding ShowWarning, Converter={StaticResource BoolToVis}}"/>
+
                             <TextBlock Text="{Binding SessionsUsedText}" Foreground="#CCCCCC" 
                                        HorizontalAlignment="Center" Margin="0,10,0,0"/>
-                            
+
                             <ProgressBar Value="{Binding RemainingMinutes}" Maximum="15" 
                                          Height="20" Margin="0,20,0,0" 
                                          Foreground="#00D4FF" Background="#2D2D44"/>
@@ -39,7 +52,7 @@
                     </Border>
                 </StackPanel>
 
-                <Border Grid.Row="2" Background="#00D4FF" Height="50" 
+                <Border Grid.Row="3" Background="#00D4FF" Height="50" 
                        CornerRadius="0,0,15,15" VerticalAlignment="Bottom" 
                        Margin="0,0,-30,-30"/>
             </Grid>

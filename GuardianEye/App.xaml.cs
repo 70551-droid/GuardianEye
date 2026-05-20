@@ -11,6 +11,7 @@ namespace GuardianEye
     public partial class App : Application
     {
         private IHost? _host;
+        private SessionEnforcementService? _enforcement;
 
         protected override async void OnStartup(StartupEventArgs e)
         {
@@ -28,6 +29,7 @@ namespace GuardianEye
                     services.AddSingleton<IDeviceService, DeviceService>();
                     services.AddSingleton<IActivityLogService, ActivityLogService>();
                     services.AddSingleton<ILockScreenService, LockScreenService>();
+                    services.AddSingleton<SessionEnforcementService>();
                     
                     services.AddSingleton<INavigationService, NavigationService>();
                     services.AddSingleton<IThemeService, ThemeService>();
@@ -42,12 +44,16 @@ namespace GuardianEye
                 })
                 .Build();
 
+            _enforcement = _host.Services.GetRequiredService<SessionEnforcementService>();
+            _enforcement.StartEnforcement();
+
             var loginWindow = _host.Services.GetRequiredService<LoginWindow>();
             loginWindow.Show();
         }
 
         protected override void OnExit(ExitEventArgs e)
         {
+            _enforcement?.StopEnforcement();
             _host?.Dispose();
             base.OnExit(e);
         }

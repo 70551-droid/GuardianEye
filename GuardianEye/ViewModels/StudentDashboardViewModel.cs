@@ -1,8 +1,12 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using GuardianEye.Data;
+using GuardianEye.Helpers;
 using GuardianEye.Models;
 using GuardianEye.Services;
 using System;
+using System.Windows;
+using System.Windows.Media;
 using System.Windows.Threading;
 
 namespace GuardianEye.ViewModels
@@ -11,14 +15,19 @@ namespace GuardianEye.ViewModels
     {
         private readonly IAuthService _authService;
         private readonly ISessionService _sessionService;
+        private readonly IDatabaseService? _db;
+        private readonly IActivityLogService? _activityLogService;
         private readonly User _currentUser;
-        private DispatcherTimer? _timer;
+        private readonly DispatcherTimer? _timer;
 
         [ObservableProperty]
         private string _welcomeMessage = "";
 
         [ObservableProperty]
         private string _remainingTimeText = "";
+
+        [ObservableProperty]
+        private string _sessionStatus = "Session Active";
 
         [ObservableProperty]
         private string _sessionsUsedText = "";
@@ -32,31 +41,30 @@ namespace GuardianEye.ViewModels
         [ObservableProperty]
         private bool _isSessionActive = false;
 
-        public StudentDashboardViewModel(IAuthService authService, ISessionService sessionService, User currentUser)
+        [ObservableProperty]
+        private bool _showWarning = false;
+
+        [ObservableProperty]
+        private string _warningMessage = "";
+
+        [ObservableProperty]
+        private Brush _timeDisplayColor = Brushes.White;
+
+        public StudentDashboardViewModel(IAuthService authService, ISessionService sessionService,
+            IDatabaseService db, IActivityLogService activityLogService, User currentUser)
         {
             _authService = authService;
             _sessionService = sessionService;
+            _db = db;
+            _activityLogService = activityLogService;
             _currentUser = currentUser;
 
             WelcomeMessage = $"Welcome, {_currentUser.FullName}";
             IsSessionActive = _currentUser.IsLoggedIn;
 
-            InitializeTimer();
-        }
-
-        private void InitializeTimer()
-        {
-            _timer = new DispatcherTimer
-            {
-                Interval = TimeSpan.FromSeconds(1)
-            };
+            _timer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(1) };
             _timer.Tick += Timer_Tick;
             _timer.Start();
-
-            if (_currentUser.SessionEndTime.HasValue)
-            {
-                UpdateRemainingTime();
-            }
         }
 
         private void Timer_Tick(object? sender, EventArgs e)
@@ -68,31 +76,50 @@ namespace GuardianEye.ViewModels
                 {
                     _timer!.Stop();
                     IsSessionActive = false;
-                    RemainingTimeText = "Session Expired";
+                    RemainingTimeText = "SESSION EXPIRED";
+                    SessionStatus = "Session Expired";
+                    TimeDisplayColor = Brushes.Red;
                 }
                 else
                 {
-                    UpdateRemainingTime();
+                    UpdateRemainingTime(remaining);
                 }
             }
         }
 
-        private void UpdateRemainingTime()
+        private void UpdateRemainingTime(TimeSpan remaining)
         {
-            if (_currentUser.SessionEndTime.HasValue)
+            RemainingMinutes = (int)remaining.TotalMinutes;
+            RemainingSeconds = remaining.Seconds;
+            RemainingTimeText = $"{RemainingMinutes:D2}:{RemainingSeconds:D2}";
+            SessionsUsedText = $"Sessions Used: {_currentUser.SessionsUsedToday} / {_currentUser.MaxDailySessions}";
+
+            var totalSeconds = (int)remaining.TotalSeconds;
+
+            if (totalSeconds <= 10)
             {
-                var remaining = _currentUser.SessionEndTime.Value - DateTime.UtcNow;
-                if (remaining.TotalSeconds > 0)
-                {
-                    RemainingMinutes = (int)remaining.TotalMinutes;
-                    RemainingSeconds = remaining.Seconds;
-                    RemainingTimeText = $"Time Remaining: {RemainingMinutes:D2}:{RemainingSeconds:D2}";
-                    SessionsUsedText = $"Sessions Used Today: {_currentUser.SessionsUsedToday} / {_currentUser.MaxDailySessions}";
-                }
-                else
-                {
-                    RemainingTimeText = "Session Expired";
-                }
+                ShowWarning = true;
+                WarningMessage = "⚠️  SESSION ENDING SOON!";
+                TimeDisplayColor = Brushes.Red;
+
+                if (totalSeconds % 2 == 0)
+                    RemainingTimeText = $"⚠️ {RemainingTimeText}";
+            }
+            else if (totalSeconds <= 60)
+            {
+                ShowWarning = true;
+                WarningMessage = "⚠️  Less than 1 minute remaining";
+                TimeDisplayColor = new SolidColorBrush(Color.FromRgb(255, 165, 0));
+            }
+            else if (totalSeconds <= 300)
+            {
+                ShowWarning = false;
+                TimeDisplayColor = new SolidColorBrush(Color.FromRgb(255, 215, 0));
+            }
+            else
+            {
+                ShowWarning = false;
+                TimeDisplayColor = Brushes.White;
             }
         }
     }
