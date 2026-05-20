@@ -11,7 +11,7 @@ namespace GuardianEye.Server.Controllers
         [HttpPost("login")]
         public IActionResult Login([FromBody] LoginRequestDto loginRequest)
         {
-            // For now, return a mock successful response
+            // For now, return a mock successful response for student
             // In a real implementation, this would validate credentials against a database
             var response = new LoginResponseDto
             {
@@ -36,6 +36,41 @@ namespace GuardianEye.Server.Controllers
             };
 
             return Ok(response);
+        }
+
+        // POST: api/auth/admin-login
+        [HttpPost("admin-login")]
+        public IActionResult AdminLogin([FromBody] AdminLoginRequestDto adminLoginRequest)
+        {
+            // Mock admin login - in reality, validate against database
+            if (adminLoginRequest.Username == "admin" && adminLoginRequest.Password == "admin")
+            {
+                var response = new LoginResponseDto
+                {
+                    Success = true,
+                    Message = "Admin login successful",
+                    User = new UserDto
+                    {
+                        Id = 2,
+                        FullName = "Administrator",
+                        Username = "admin",
+                        Role = "Admin",
+                        StudentId = null,
+                        Class = null,
+                        DeviceId = null,
+                        SessionsUsedToday = 0,
+                        MaxDailySessions = 2,
+                        SessionDurationMinutes = 15,
+                        IsLoggedIn = true,
+                        IsActive = true,
+                        CreatedAt = DateTime.UtcNow
+                    }
+                };
+
+                return Ok(response);
+            }
+
+            return Unauthorized(new LoginResponseDto { Success = false, Message = "Invalid admin credentials" });
         }
 
         // POST: api/auth/validate-session

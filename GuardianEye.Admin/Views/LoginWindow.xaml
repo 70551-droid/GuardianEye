@@ -1,0 +1,83 @@
+<Window x:Class="GuardianEye.Admin.Views.LoginWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:GuardianEye.Admin.Views"
+        mc:Ignorable="d"
+        Title="GuardianEye Admin - Login" Height="450" Width="800"
+        WindowStartupLocation="CenterScreen"
+        WindowStyle="None"
+        AllowsTransparency="True"
+        Background="Transparent">
+    <Border Background="#FF2D2D30" CornerRadius="15" Margin="20">
+        <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="60"/>
+                <RowDefinition Height="*"/>
+            </Grid.RowDefinitions>
+            
+            <!-- Header -->
+            <Border Background="#FF1E1E20" CornerRadius="15,15,0,0">
+                <TextBlock Text="GuardianEye Admin Panel" 
+                          Foreground="White" 
+                          FontSize="24" 
+                          FontWeight="Bold"
+                          HorizontalAlignment="Center"
+                          VerticalAlignment="Center"/>
+            </Border>
+            
+            <!-- Login Form -->
+            <Grid Grid.Row="1" Margin="40">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="20"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="20"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="30"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                </Grid.RowDefinitions>
+                
+                <TextBlock Text="Username" Foreground="#FFCCCCCC" FontSize="14"/>
+                <TextBox x:Name="UsernameTextBox" 
+                        Grid.Row="1"
+                        Background="#FF3D3D40"
+                        Foreground="White"
+                        BorderBrush="#FF555555"
+                        BorderThickness="1"
+                        Padding="10"
+                        FontSize="14"/>
+                
+                <TextBlock Text="Password" Foreground="#FFCCCCCC" FontSize="14" Grid.Row="2"/>
+                <PasswordBox x:Name="PasswordBox"
+                           Grid.Row="3"
+                           Background="#FF3D3D40"
+                           Foreground="White"
+                           BorderBrush="#FF555555"
+                           BorderThickness="1"
+                           Padding="10"
+                           FontSize="14"/>
+                
+                <Button Content="Login"
+                       Grid.Row="4"
+                       Background="#FF0078D4"
+                       Foreground="White"
+                       FontSize="16"
+                       FontWeight="Bold"
+                       Padding="0,12"
+                       Cursor="Hand"
+                       Margin="0,20,0,0"
+                       Click="LoginButton_Click"/>
+                
+                <TextBlock x:Name="ErrorTextBlock"
+                          Grid.Row="5"
+                          Foreground="#FFFF6B6B"
+                          FontSize="12"
+                          HorizontalAlignment="Center"
+                          Visibility="Collapsed"/>
+            </Grid>
+        </Grid>
+    </Border>
+</Window>
