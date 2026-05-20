@@ -691,7 +691,7 @@
       },
       "GuardianEye.Shared/1.0.0": {
         "type": "project",
-        "framework": ".NETCoreApp,Version=v8.0",
+        "framework": ".NETCoreApp,Version=v10.0",
         "compile": {
           "bin/placeholder/GuardianEye.Shared.dll": {}
         },

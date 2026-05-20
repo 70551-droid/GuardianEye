@@ -1,12 +1,8 @@
 {
   "version": 2,
-  "dgSpecHash": "r84xi9HyE0o=",
+  "dgSpecHash": "oWXHLtCpJpA=",
   "success": true,
   "projectFilePath": "C:\\70551-droid\\GuardianEye\\GuardianEye.Shared\\GuardianEye.Shared.csproj",
-  "expectedPackageFiles": [
-    "C:\\Users\\Administrator\\.nuget\\packages\\microsoft.netcore.app.ref\\8.0.27\\microsoft.netcore.app.ref.8.0.27.nupkg.sha512",
-    "C:\\Users\\Administrator\\.nuget\\packages\\microsoft.windowsdesktop.app.ref\\8.0.27\\microsoft.windowsdesktop.app.ref.8.0.27.nupkg.sha512",
-    "C:\\Users\\Administrator\\.nuget\\packages\\microsoft.aspnetcore.app.ref\\8.0.27\\microsoft.aspnetcore.app.ref.8.0.27.nupkg.sha512"
-  ],
+  "expectedPackageFiles": [],
   "logs": []
 }
