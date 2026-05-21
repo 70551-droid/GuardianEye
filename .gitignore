@@ -1,14 +1,21 @@
-﻿# Build outputs
-**/bin/
-**/obj/
-**/out/
-**/publish/
+# Build outputs
+bin/
+obj/
+out/
+publish/
+
+# SQLite databases
+*.db
+
+# Screenshots
+Screenshots/
 
 # User-specific files
 .vscode/
 .idea/
 *.user
 *.suo
+*.csr
 *.userosscache
 *.sln.docstates
 
@@ -35,10 +42,10 @@ TestResults/
 # Local tools
 .dotnet/
 
-# SQL LocalDB data (user-specific)
+# SQL Server data files
 *.mdf
 *.ldf
 *.ndf
 
-# Migration artifacts (keep source, ignore generated)
+# Migration designer stubs
 **/Migrations/*.Designer.cs
