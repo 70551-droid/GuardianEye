@@ -36,11 +36,13 @@ namespace GuardianEye
                     services.AddSingleton<ILockScreenService, LockScreenService>();
                     services.AddSingleton<SessionEnforcementService>();
                     
-                    services.AddSingleton<IHiddenInputService, HiddenInputService>();
+services.AddSingleton<IHiddenInputService, HiddenInputService>();
                     services.AddSingleton<IDeveloperOverrideService, DeveloperOverrideService>();
                     services.AddTransient<DeveloperOverlayViewModel>();
                     services.AddTransient<DeveloperOverlayWindow>();
-                    
+
+                    services.AddSingleton<ITimeRequestService, TimeRequestService>();
+
                     services.AddSingleton<INavigationService, NavigationService>();
                     services.AddSingleton<IThemeService, ThemeService>();
 
@@ -49,10 +51,12 @@ namespace GuardianEye
                     services.AddTransient<LoginViewModel>();
                     services.AddTransient<AdminDashboardViewModel>();
                     services.AddTransient<StudentDashboardViewModel>();
+                    services.AddTransient<RequestMoreTimeViewModel>();
 
                     services.AddTransient<LoginWindow>();
                     services.AddTransient<AdminDashboardView>();
                     services.AddTransient<StudentDashboardView>();
+                    services.AddTransient<RequestMoreTimeWindow>();
                 })
                 .Build();
 

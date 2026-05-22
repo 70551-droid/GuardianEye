@@ -1,0 +1,100 @@
+<Window x:Class="GuardianEye.Views.RequestMoreTimeWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        mc:Ignorable="d"
+        Title="Request More Time"
+        Width="340"
+        SizeToContent="Height"
+        WindowStartupLocation="CenterOwner"
+        WindowStyle="None"
+        AllowsTransparency="True"
+        Background="Transparent"
+        ResizeMode="NoResize"
+        ShowInTaskbar="False">
+
+    <Border Background="#1E1E34" CornerRadius="16" Padding="30">
+        <Border.Effect>
+            <DropShadowEffect Color="#000" Direction="270" ShadowDepth="8" BlurRadius="24" Opacity="0.5"/>
+        </Border.Effect>
+        <StackPanel>
+
+            <TextBlock Text="Request More Time"
+                       FontSize="18"
+                       FontWeight="SemiBold"
+                       Foreground="#00D4FF"
+                       HorizontalAlignment="Center"
+                       Margin="0,0,0,24"/>
+
+            <TextBlock Text="How much time?"
+                       FontSize="11"
+                       Foreground="#8888AA"
+                       Margin="0,0,0,6"/>
+
+<Border Background="#282844" CornerRadius="10" BorderThickness="1" BorderBrush="#3A3A5C" Margin="0,0,0,18">
+                <TextBox Text="{Binding Minutes, UpdateSourceTrigger=PropertyChanged}"
+                      FontSize="24"
+                      Foreground="White"
+                      Background="Transparent"
+                      BorderThickness="0"
+                      Height="48"
+                      Padding="14,0"
+                      MaxLength="3"
+                      PreviewTextInput="MinutesTextBox_PreviewTextInput"/>
+            </Border>
+
+            <TextBlock Text="Reason"
+                       FontSize="11"
+                       Foreground="#8888AA"
+                       Margin="0,0,0,6"/>
+
+            <Border Background="#282844" CornerRadius="10" BorderThickness="1" BorderBrush="#3A3A5C" Margin="0,0,0,24">
+                <TextBox Text="{Binding Reason, UpdateSourceTrigger=PropertyChanged}"
+                      FontSize="14"
+                      Foreground="White"
+                      Background="Transparent"
+                      BorderThickness="0"
+                      Height="80"
+                      Padding="14,10"
+                      AcceptsReturn="True"
+                      TextWrapping="Wrap"
+                      VerticalScrollBarVisibility="Auto"/>
+            </Border>
+
+            <Border CornerRadius="30"
+                    Background="#2A2A55"
+                    BorderThickness="1"
+                    BorderBrush="#00D4FF"
+                    Height="46"
+                    Margin="0,0,0,12">
+                <Button Content="SUBMIT REQUEST"
+                        Command="{Binding SubmitCommand}"
+                        Background="Transparent"
+                        Foreground="#00D4FF"
+                        BorderThickness="0"
+                        FontSize="13"
+                        FontWeight="SemiBold"
+                        Cursor="Hand"
+                        Height="46"/>
+            </Border>
+
+            <Border CornerRadius="24"
+                    Background="Transparent"
+                    BorderThickness="1"
+                    BorderBrush="#444466"
+                    Height="30"
+                    Margin="0,0,0,12">
+                <Button Content="CANCEL"
+                        Command="{Binding CancelCommand}"
+                        Background="Transparent"
+                        Foreground="#666688"
+                        BorderThickness="0"
+                        FontSize="11"
+                        Cursor="Hand"
+                        Height="30"/>
+            </Border>
+
+        </StackPanel>
+    </Border>
+</Window>

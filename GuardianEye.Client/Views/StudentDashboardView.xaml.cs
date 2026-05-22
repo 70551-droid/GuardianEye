@@ -1,4 +1,5 @@
 using System.Windows;
+using System.Windows.Input;
 
 namespace GuardianEye.Views
 {
@@ -7,11 +8,10 @@ namespace GuardianEye.Views
         public StudentDashboardView()
         {
             InitializeComponent();
-            Closing += (s, e) =>
+            PreviewKeyDown += (s, e) =>
             {
-                if (DataContext is CommunityToolkit.Mvvm.ComponentModel.ObservableObject)
-                {
-                }
+                if (e.Key == Key.Escape)
+                    Close();
             };
         }
     }

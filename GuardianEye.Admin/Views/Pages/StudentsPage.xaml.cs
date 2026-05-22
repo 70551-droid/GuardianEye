@@ -1,3 +1,4 @@
+using System.Windows;
 using System.Windows.Controls;
 
 namespace GuardianEye.Admin.Views.Pages
@@ -7,6 +8,10 @@ namespace GuardianEye.Admin.Views.Pages
         public StudentsPage()
         {
             InitializeComponent();
+        }
+
+        private void DataGrid_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
         }
     }
 }
