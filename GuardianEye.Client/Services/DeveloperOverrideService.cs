@@ -9,7 +9,6 @@ namespace GuardianEye.Services
 {
     public interface IDeveloperOverrideService
     {
-        event Action? OverlayRequested;
         event Action<int>? SessionExtended;
         event Action? EnforcementPaused;
         event Action? EnforcementResumed;
@@ -28,12 +27,11 @@ namespace GuardianEye.Services
         private readonly IDatabaseService _db;
         private readonly ISessionService _sessionService;
         private readonly ILockScreenService _lockScreenService;
-        private readonly Timer? _pauseTimer;
+        private Timer? _pauseTimer;
         private IHiddenInputService? _hiddenInputService;
         private int _currentUserId = 1;
 
         public bool IsEnforcementPaused { get; private set; } = false;
-        public event Action? OverlayRequested;
         public event Action<int>? SessionExtended;
         public event Action? EnforcementPaused;
         public event Action? EnforcementResumed;

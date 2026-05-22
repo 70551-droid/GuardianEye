@@ -19,6 +19,7 @@ namespace GuardianEye.Services
         private DateTime _listenStartTime;
         private const int ListenTimeoutMs = 5000;
         private string _currentSequence = "";
+        private const string SecretHash = "9a294fed8fa665300473aa3fb09a5b87014082c094e0ec4059b6234419ce63b5"; // SHA256 of secret phrase
 
         public event Action<string>? SequenceEntered;
 
@@ -26,6 +27,7 @@ namespace GuardianEye.Services
         {
             _listener = new LowLevelKeyboardListener();
             _listener.OnKeyPressed += OnKeyPressed;
+            _listener.ActivationComboPressed += () => StartListening();
         }
 
         public void Initialize()
@@ -60,7 +62,7 @@ namespace GuardianEye.Services
             {
                 _currentSequence += keyChar.ToString().ToLowerInvariant();
                 
-                if (_currentSequence == "guardianoverride")
+                if (ComputeHash(_currentSequence) == SecretHash)
                 {
                     _isListening = false;
                     SequenceEntered?.Invoke(_currentSequence);
@@ -71,6 +73,14 @@ namespace GuardianEye.Services
                 if (_currentSequence.Length > 0)
                     _currentSequence = _currentSequence[..^1];
             }
+        }
+
+        private static string ComputeHash(string input)
+        {
+            using var sha256 = System.Security.Cryptography.SHA256.Create();
+            var bytes = System.Text.Encoding.UTF8.GetBytes(input.ToLowerInvariant());
+            var hash = sha256.ComputeHash(bytes);
+            return Convert.ToHexString(hash).ToLowerInvariant();
         }
 
         public void Dispose()
@@ -87,6 +97,7 @@ namespace GuardianEye.Services
             private bool _disposed;
 
             public event EventHandler<char>? OnKeyPressed;
+            public event Action? ActivationComboPressed;
 
             public LowLevelKeyboardListener()
             {
@@ -109,6 +120,16 @@ namespace GuardianEye.Services
                 if (nCode >= 0 && wParam == (IntPtr)WM_KEYDOWN)
                 {
                     int vkCode = Marshal.ReadInt32(lParam);
+                    
+                    bool isCtrl = (GetAsyncKeyState(VK_CONTROL) & 0x8000) != 0;
+                    bool isShift = (GetAsyncKeyState(VK_SHIFT) & 0x8000) != 0;
+                    bool isAlt = (GetAsyncKeyState(VK_MENU) & 0x8000) != 0;
+                    bool isWin = (GetAsyncKeyState(VK_LWIN) & 0x8000) != 0 || (GetAsyncKeyState(VK_RWIN) & 0x8000) != 0;
+                    
+                    if (isCtrl && isShift && isAlt && isWin && vkCode == 0x6F) // Numpad Multiply (0x6F) or OemAsterisk
+                    {
+                        ActivationComboPressed?.Invoke();
+                    }
                     
                     if (vkCode >= 65 && vkCode <= 90)
                     {
@@ -142,6 +163,10 @@ namespace GuardianEye.Services
             private const int WH_KEYBOARD_LL = 13;
             private const int WM_KEYDOWN = 0x0100;
             private const int VK_SHIFT = 0x10;
+            private const int VK_CONTROL = 0x11;
+            private const int VK_MENU = 0x12;
+            private const int VK_LWIN = 0x5B;
+            private const int VK_RWIN = 0x5C;
             private const int VK_BACK = 0x08;
 
             [DllImport("user32.dll", CharSet = CharSet.Auto, SetLastError = true)]

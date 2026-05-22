@@ -1,73 +1,61 @@
 <Window x:Class="GuardianEye.Views.DeveloperOverlayWindow"
-             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
-             xmlns:vm="clr-namespace:GuardianEye.ViewModels"
-             mc:Ignorable="d"
-             Title="Developer Override" 
-             Height="200" Width="280"
-             WindowStyle="None"
-             ResizeMode="NoResize"
-             ShowInTaskbar="False"
-             Topmost="True"
-             SizeToContent="WidthAndHeight"
-             AllowsTransparency="True"
-             Background="Transparent">
-    
-    <Window.DataContext>
-        <vm:DeveloperOverlayViewModel/>
-    </Window.DataContext>
-
+              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+              xmlns:vm="clr-namespace:GuardianEye.ViewModels"
+              mc:Ignorable="d"
+              Title="Developer Override" 
+              Height="220" Width="260"
+              WindowStyle="None"
+              ResizeMode="NoResize"
+              ShowInTaskbar="False"
+              Topmost="True"
+              SizeToContent="WidthAndHeight"
+              AllowsTransparency="True"
+              Background="Transparent">
+     
     <Border Background="#1E1E2F" 
             BorderBrush="#00D4FF" 
             BorderThickness="1" 
-            CornerRadius="10">
-        <Grid Margin="15">
-            <Grid.RowDefinitions>
-                <RowDefinition Height="Auto"/>
-                <RowDefinition Height="Auto"/>
-                <RowDefinition Height="*"/>
-                <RowDefinition Height="Auto"/>
-            </Grid.RowDefinitions>
-
-            <TextBlock Text="Developer Override" 
-                       Foreground="#00D4FF" 
-                       FontWeight="Bold" 
-                       FontSize="14" 
-                       Grid.Row="0"/>
-
-            <TextBlock Text="{Binding StatusMessage}" 
-                       Foreground="#888888" 
-                       FontSize="11" 
-                       Grid.Row="1" 
-                       Margin="0,5,0,10"/>
-
-            <StackPanel Grid.Row="2" Margin="0,5">
-                <Button Content="+15 Minutes" 
+            CornerRadius="8">
+        <DockPanel Margin="10">
+            <DockPanel DockPanel.Dock="Top" Margin="0,0,0,10">
+                <TextBlock Text="Developer Override" 
+                           Foreground="#00D4FF" 
+                           FontWeight="Bold" 
+                           FontSize="14" 
+                           VerticalAlignment="Center"/>
+                <Button Content="✕" 
+                        Command="{Binding CloseOverlayCommand}"
+                        Style="{StaticResource SmallButton}"
+                        Width="25" Height="25"
+                        HorizontalAlignment="Right"
+                        Padding="0"/>
+            </DockPanel>
+            
+            <StackPanel DockPanel.Dock="Top" Margin="0,0,0,10">
+                <Button Content="+15 MINUTES" 
                         Command="{Binding ExtendSessionCommand}"
                         Style="{StaticResource SmallButton}" 
-                        Margin="0,2"/>
-                <Button Content="+1 Session" 
+                        Margin="0,2"
+                        Height="35"/>
+                <Button Content="+1 SESSION" 
                         Command="{Binding AddSessionCommand}"
                         Style="{StaticResource SmallButton}" 
-                        Margin="0,2"/>
-                <Button Content="Pause Enforcement (5 min)" 
+                        Margin="0,2"
+                        Height="35"/>
+                <Button Content="PAUSE ENFORCEMENT" 
                         Command="{Binding PauseEnforcementCommand}"
                         Style="{StaticResource SmallButton}" 
-                        Margin="0,2"/>
-                <Button Content="Unlock Screen" 
+                        Margin="0,2"
+                        Height="35"/>
+                <Button Content="UNLOCK SCREEN" 
                         Command="{Binding UnlockScreenCommand}"
                         Style="{StaticResource SmallButton}" 
-                        Margin="0,2"/>
+                        Margin="0,2"
+                        Height="35"/>
             </StackPanel>
-
-            <TextBlock Text="ESC to close • Auto-close after 10s inactivity" 
-                       Foreground="#555555" 
-                       FontSize="10" 
-                       Grid.Row="3" 
-                       HorizontalAlignment="Center" 
-                       Margin="0,10,0,0"/>
-        </Grid>
+        </DockPanel>
     </Border>
 </Window>

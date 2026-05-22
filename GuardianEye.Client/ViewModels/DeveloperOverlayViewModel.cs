@@ -26,7 +26,7 @@ namespace GuardianEye.ViewModels
         }
 
         [RelayCommand]
-        private async void ExtendSession()
+        private async Task ExtendSession()
         {
             ResetInactivity();
             await _overrideService.ExtendSessionAsync(15);
@@ -34,7 +34,7 @@ namespace GuardianEye.ViewModels
         }
 
         [RelayCommand]
-        private async void AddSession()
+        private async Task AddSession()
         {
             ResetInactivity();
             await _overrideService.AddSessionAsync();
@@ -42,7 +42,7 @@ namespace GuardianEye.ViewModels
         }
 
         [RelayCommand]
-        private async void PauseEnforcement()
+        private async Task PauseEnforcement()
         {
             ResetInactivity();
             await _overrideService.PauseEnforcementAsync(TimeSpan.FromMinutes(5));
@@ -50,7 +50,7 @@ namespace GuardianEye.ViewModels
         }
 
         [RelayCommand]
-        private async void UnlockScreen()
+        private async Task UnlockScreen()
         {
             ResetInactivity();
             await _overrideService.UnlockScreenAsync();
@@ -61,7 +61,7 @@ namespace GuardianEye.ViewModels
         private void CloseOverlay()
         {
             IsVisible = false;
-            _inactivityTimer?.Stop();
+            _inactivityTimer?.Change(Timeout.Infinite, Timeout.Infinite);
         }
 
         public void HandleActivity()
