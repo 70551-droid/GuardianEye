@@ -1,5 +1,5 @@
 ﻿GuardianEye.Admin
-1.0.0.0
+
 
 winexe
 C#
@@ -10,11 +10,11 @@ none
 false
 TRACE;DEBUG;NET;NET10_0;NETCOREAPP;WINDOWS;WINDOWS7_0;NET5_0_OR_GREATER;NET6_0_OR_GREATER;NET7_0_OR_GREATER;NET8_0_OR_GREATER;NET9_0_OR_GREATER;NET10_0_OR_GREATER;NETCOREAPP3_0_OR_GREATER;NETCOREAPP3_1_OR_GREATER;WINDOWS7_0_OR_GREATER
 C:\70551-droid\GuardianEye\GuardianEye.Admin\App.xaml
-9-1883710655
+11656509701
 
-181014562706
+20603504167
 236-220012962
-Views\DashboardShell.xaml;Views\LoginWindow.xaml;Views\Pages\DashboardPage.xaml;Views\Pages\DevicesPage.xaml;Views\Pages\MonitoringPage.xaml;Views\Pages\ReportsPage.xaml;Views\Pages\RestrictionsPage.xaml;Views\Pages\SettingsPage.xaml;Views\Pages\StudentsPage.xaml;
+Views\DashboardShell.xaml;Views\LoginWindow.xaml;Views\Pages\DashboardPage.xaml;Views\Pages\DevicesPage.xaml;Views\Pages\MonitoringPage.xaml;Views\Pages\ReportsPage.xaml;Views\Pages\RestrictionsPage.xaml;Views\Pages\SettingsPage.xaml;Views\Pages\StudentsPage.xaml;Views\Pages\TimeRequestsPage.xaml;Views\StudentEditWindow.xaml;
 
-True
+False
 

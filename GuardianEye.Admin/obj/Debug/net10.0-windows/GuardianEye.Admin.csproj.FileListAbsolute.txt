@@ -67,3 +67,8 @@ C:\70551-droid\GuardianEye\GuardianEye.Admin\obj\Debug\net10.0-windows\refint\Gu
 C:\70551-droid\GuardianEye\GuardianEye.Admin\obj\Debug\net10.0-windows\GuardianEye.Admin.pdb
 C:\70551-droid\GuardianEye\GuardianEye.Admin\obj\Debug\net10.0-windows\GuardianEye.Admin.genruntimeconfig.cache
 C:\70551-droid\GuardianEye\GuardianEye.Admin\obj\Debug\net10.0-windows\ref\GuardianEye.Admin.dll
+C:\70551-droid\GuardianEye\GuardianEye.Admin\obj\Debug\net10.0-windows\GuardianEye.Admin.sourcelink.json
+C:\70551-droid\GuardianEye\GuardianEye.Admin\obj\Debug\net10.0-windows\Views\Pages\TimeRequestsPage.g.cs
+C:\70551-droid\GuardianEye\GuardianEye.Admin\obj\Debug\net10.0-windows\Views\StudentEditWindow.g.cs
+C:\70551-droid\GuardianEye\GuardianEye.Admin\obj\Debug\net10.0-windows\Views\Pages\TimeRequestsPage.baml
+C:\70551-droid\GuardianEye\GuardianEye.Admin\obj\Debug\net10.0-windows\Views\StudentEditWindow.baml
