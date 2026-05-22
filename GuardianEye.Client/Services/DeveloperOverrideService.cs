@@ -30,6 +30,7 @@ namespace GuardianEye.Services
         private Timer? _pauseTimer;
         private IHiddenInputService? _hiddenInputService;
         private int _currentUserId = 1;
+        private bool _disposed;
 
         public bool IsEnforcementPaused { get; private set; } = false;
         public event Action<int>? SessionExtended;
@@ -72,6 +73,7 @@ namespace GuardianEye.Services
             catch (Exception ex)
             {
                 Logging.Error("Error extending session via override", ex);
+                throw;
             }
         }
 
@@ -79,7 +81,7 @@ namespace GuardianEye.Services
         {
             try
             {
-                var result = await _db.ExecuteAsync(
+                await _db.ExecuteAsync(
                     "UPDATE Users SET SessionsUsedToday = SessionsUsedToday - 1, MaxDailySessions = MaxDailySessions + 1 WHERE Id = @Id",
                     new { Id = _currentUserId });
 
@@ -88,6 +90,7 @@ namespace GuardianEye.Services
             catch (Exception ex)
             {
                 Logging.Error("Error adding session via override", ex);
+                throw;
             }
         }
 
@@ -121,6 +124,7 @@ namespace GuardianEye.Services
             catch (Exception ex)
             {
                 Logging.Error("Error unlocking screen via override", ex);
+                throw;
             }
         }
 
@@ -134,7 +138,12 @@ namespace GuardianEye.Services
 
         public void Dispose()
         {
-            _pauseTimer?.Dispose();
+            if (!_disposed)
+            {
+                _pauseTimer?.Dispose();
+                _pauseTimer = null;
+                _disposed = true;
+            }
         }
     }
 }

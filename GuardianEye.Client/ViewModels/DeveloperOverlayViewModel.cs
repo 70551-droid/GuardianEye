@@ -3,6 +3,8 @@ using CommunityToolkit.Mvvm.Input;
 using GuardianEye.Services;
 using System;
 using System.Threading;
+using System.Threading.Tasks;
+using System.Windows.Threading;
 
 namespace GuardianEye.ViewModels
 {
@@ -12,6 +14,7 @@ namespace GuardianEye.ViewModels
         private Timer? _inactivityTimer;
         private DateTime _lastActivity = DateTime.UtcNow;
         private const int InactivityTimeoutSeconds = 10;
+        private bool _isClosing = false;
 
         [ObservableProperty]
         private string _statusMessage = "Developer Override Active";
@@ -28,45 +31,81 @@ namespace GuardianEye.ViewModels
         [RelayCommand]
         private async Task ExtendSession()
         {
+            if (_isClosing) return;
             ResetInactivity();
-            await _overrideService.ExtendSessionAsync(15);
-            StatusMessage = "Session extended by 15 minutes";
+            try
+            {
+                await _overrideService.ExtendSessionAsync(15);
+                StatusMessage = "Session extended by 15 minutes";
+            }
+            catch
+            {
+                StatusMessage = "Error extending session";
+            }
         }
 
         [RelayCommand]
         private async Task AddSession()
         {
+            if (_isClosing) return;
             ResetInactivity();
-            await _overrideService.AddSessionAsync();
-            StatusMessage = "Session count incremented";
+            try
+            {
+                await _overrideService.AddSessionAsync();
+                StatusMessage = "Session count incremented";
+            }
+            catch
+            {
+                StatusMessage = "Error adding session";
+            }
         }
 
         [RelayCommand]
         private async Task PauseEnforcement()
         {
+            if (_isClosing) return;
             ResetInactivity();
-            await _overrideService.PauseEnforcementAsync(TimeSpan.FromMinutes(5));
-            StatusMessage = "Enforcement paused for 5 minutes";
+            try
+            {
+                await _overrideService.PauseEnforcementAsync(TimeSpan.FromMinutes(5));
+                StatusMessage = "Enforcement paused for 5 minutes";
+            }
+            catch
+            {
+                StatusMessage = "Error pausing enforcement";
+            }
         }
 
         [RelayCommand]
         private async Task UnlockScreen()
         {
+            if (_isClosing) return;
             ResetInactivity();
-            await _overrideService.UnlockScreenAsync();
-            StatusMessage = "Screen unlocked";
+            try
+            {
+                await _overrideService.UnlockScreenAsync();
+                StatusMessage = "Screen unlocked";
+            }
+            catch
+            {
+                StatusMessage = "Error unlocking screen";
+            }
         }
 
         [RelayCommand]
         private void CloseOverlay()
         {
+            if (_isClosing) return;
+            _isClosing = true;
             IsVisible = false;
-            _inactivityTimer?.Change(Timeout.Infinite, Timeout.Infinite);
+            _inactivityTimer?.Dispose();
+            _inactivityTimer = null;
         }
 
         public void HandleActivity()
         {
-            ResetInactivity();
+            if (!_isClosing)
+                ResetInactivity();
         }
 
         private void ResetInactivity()
@@ -76,17 +115,31 @@ namespace GuardianEye.ViewModels
 
         private void CheckInactivity(object? state)
         {
-            if (DateTime.UtcNow.Subtract(_lastActivity).TotalSeconds >= InactivityTimeoutSeconds)
+            try
             {
-                IsVisible = false;
-                _inactivityTimer?.Dispose();
-                _inactivityTimer = null;
+                if (DateTime.UtcNow.Subtract(_lastActivity).TotalSeconds >= InactivityTimeoutSeconds)
+                {
+                    Dispatcher.CurrentDispatcher.BeginInvoke(new Action(() =>
+                    {
+                        if (!_isClosing)
+                        {
+                            IsVisible = false;
+                            _inactivityTimer?.Dispose();
+                            _inactivityTimer = null;
+                        }
+                    }));
+                }
+            }
+            catch
+            {
+                // Ignore timer exceptions
             }
         }
 
         public void Dispose()
         {
             _inactivityTimer?.Dispose();
+            _inactivityTimer = null;
         }
     }
 }

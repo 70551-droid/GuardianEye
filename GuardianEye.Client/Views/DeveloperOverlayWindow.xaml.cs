@@ -9,30 +9,38 @@ namespace GuardianEye.Views
 {
     public partial class DeveloperOverlayWindow : Window
     {
+        private readonly DeveloperOverlayViewModel? _viewModel;
+
         public DeveloperOverlayWindow(DeveloperOverlayViewModel viewModel)
         {
             InitializeComponent();
             DataContext = viewModel;
+            _viewModel = viewModel;
             Loaded += DeveloperOverlayWindow_Loaded;
             KeyDown += DeveloperOverlayWindow_KeyDown;
-            MouseMove += (s, e) => viewModel?.HandleActivity();
+            MouseMove += (s, e) => _viewModel?.HandleActivity();
+            PreviewMouseDown += DeveloperOverlayWindow_PreviewMouseDown;
         }
 
         private void DeveloperOverlayWindow_Loaded(object sender, RoutedEventArgs e)
         {
-            var fadeIn = new DoubleAnimation(0, 1, TimeSpan.FromMilliseconds(200));
+            Opacity = 0;
+            var fadeIn = new DoubleAnimation(0, 1, TimeSpan.FromMilliseconds(150));
             this.BeginAnimation(UIElement.OpacityProperty, fadeIn);
+        }
+
+        private void DeveloperOverlayWindow_PreviewMouseDown(object sender, MouseButtonEventArgs e)
+        {
+            _viewModel?.HandleActivity();
         }
 
         private void DeveloperOverlayWindow_KeyDown(object sender, KeyEventArgs e)
         {
             if (e.Key == Key.Escape)
             {
-                if (DataContext is DeveloperOverlayViewModel vm)
-                    vm.CloseOverlayCommand.Execute(null);
+                _viewModel?.CloseOverlayCommand.Execute(null);
             }
-            if (DataContext is DeveloperOverlayViewModel vm2)
-                vm2.HandleActivity();
+            _viewModel?.HandleActivity();
         }
     }
 }
