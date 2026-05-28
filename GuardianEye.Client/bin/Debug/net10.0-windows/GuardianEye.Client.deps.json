@@ -1,0 +1,39 @@
+{
+  "runtimeTarget": {
+    "name": ".NETCoreApp,Version=v10.0",
+    "signature": ""
+  },
+  "compilationOptions": {},
+  "targets": {
+    ".NETCoreApp,Version=v10.0": {
+      "GuardianEye.Client/1.0.0": {
+        "dependencies": {
+          "GuardianEye.Shared": "1.0.0"
+        },
+        "runtime": {
+          "GuardianEye.Client.dll": {}
+        }
+      },
+      "GuardianEye.Shared/1.0.0": {
+        "runtime": {
+          "GuardianEye.Shared.dll": {
+            "assemblyVersion": "1.0.0.0",
+            "fileVersion": "1.0.0.0"
+          }
+        }
+      }
+    }
+  },
+  "libraries": {
+    "GuardianEye.Client/1.0.0": {
+      "type": "project",
+      "serviceable": false,
+      "sha512": ""
+    },
+    "GuardianEye.Shared/1.0.0": {
+      "type": "project",
+      "serviceable": false,
+      "sha512": ""
+    }
+  }
+}
