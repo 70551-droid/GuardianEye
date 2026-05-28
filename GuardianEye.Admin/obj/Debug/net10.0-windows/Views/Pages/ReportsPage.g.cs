@@ -52,7 +52,7 @@ namespace GuardianEye.Admin.Views.Pages {
                 return;
             }
             _contentLoaded = true;
-            System.Uri resourceLocater = new System.Uri("/GuardianEye.Admin;component/views/pages/reportspage.xaml", System.UriKind.Relative);
+            System.Uri resourceLocater = new System.Uri("/GuardianEye.Admin;V1.0.0.0;component/views/pages/reportspage.xaml", System.UriKind.Relative);
             
             #line 1 "..\..\..\..\..\Views\Pages\ReportsPage.xaml"
             System.Windows.Application.LoadComponent(this, resourceLocater);

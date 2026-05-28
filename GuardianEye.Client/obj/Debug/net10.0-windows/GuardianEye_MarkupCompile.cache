@@ -1,5 +1,5 @@
 ﻿GuardianEye
-
+1.0.0.0
 
 winexe
 C#
@@ -12,9 +12,9 @@ TRACE;DEBUG;NET;NET10_0;NETCOREAPP;WINDOWS;WINDOWS7_0;NET5_0_OR_GREATER;NET6_0_O
 C:\70551-droid\GuardianEye\GuardianEye.Client\App.xaml
 5564916984
 
-51298891222
+53100356806
 247-627450781
 Views\AdminDashboardView.xaml;Views\DeveloperOverlayWindow.xaml;Views\LoginWindow.xaml;Views\RequestMoreTimeWindow.xaml;Views\StudentDashboardView.xaml;
 
-False
+True
 
