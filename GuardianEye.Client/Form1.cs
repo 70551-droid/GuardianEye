@@ -156,23 +156,31 @@ namespace GuardianEye.Client
 
         private void buttonLogin_Click(object sender, EventArgs e)
         {
+            // TEMPORARY HARDCODED AUTHENTICATION FOR DEVELOPMENT
+            // REPLACE WITH REAL DATABASE-BASED AUTHENTICATION WHEN ADMIN SYSTEM IS READY
             string username = textBoxUsername.Text.Trim();
             string password = textBoxPassword.Text.Trim();
 
-            if (string.IsNullOrEmpty(username) || string.IsNullOrEmpty(password))
+            if (username == "student" && password == "1234")
             {
-                MessageBox.Show("Please enter both username and password.", "Validation Error", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                return;
+                // Simulate successful login
+                // Stop UDP listener as we don't need it for this temporary auth
+                _udpListener.Stop();
+                
+                // Hide login form and show main session form
+                Hide();
+                var mainForm = new ClientMainForm();
+                mainForm.FormClosed += (s, args) => Close();
+                mainForm.Show();
+                
+                // Initialize temporary 20-minute session timer (20 * 60 = 1200 seconds)
+                _sessionTimer.Start(1200);
             }
-
-            // Send login request to admin
-            var loginRequest = new LoginRequestMessage
+            else
             {
-                Username = username,
-                Password = password
-            };
-
-            _tcpClient.SendMessage(loginRequest);
+                MessageBox.Show("Invalid credentials. Use username: 'student' and password: '1234' for temporary access.", 
+                               "Login Failed", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            }
         }
 
         protected override void OnFormClosing(FormClosingEventArgs e)
