@@ -5,7 +5,7 @@ namespace GuardianEye.Client
 {
     public class SessionTimer
     {
-        private readonly Timer _timer;
+        private readonly System.Windows.Forms.Timer _timer;
         private int _remainingTimeSeconds;
         private bool _isRunning;
         public event EventHandler<int> TimeChanged; // remaining seconds
@@ -13,7 +13,7 @@ namespace GuardianEye.Client
 
         public SessionTimer()
         {
-            _timer = new Timer { Interval = 1000 }; // 1 second
+            _timer = new System.Windows.Forms.Timer { Interval = 1000 }; // 1 second
             _timer.Tick += Timer_Tick;
         }
 
@@ -62,17 +62,18 @@ namespace GuardianEye.Client
         }
 
         private void Timer_Tick(object sender, EventArgs e)
-{
-    if (_remainingTimeSeconds > 0)
-    {
-        _remainingTimeSeconds--;
-        TimeChanged?.Invoke(this, _remainingTimeSeconds);
-        if (_remainingTimeSeconds == 0)
         {
-            _timer.Stop();
-            _isRunning = false;
-            TimeExpired?.Invoke(this, EventArgs.Empty);
+            if (_remainingTimeSeconds > 0)
+            {
+                _remainingTimeSeconds--;
+                TimeChanged?.Invoke(this, _remainingTimeSeconds);
+                if (_remainingTimeSeconds == 0)
+                {
+                    _timer.Stop();
+                    _isRunning = false;
+                    TimeExpired?.Invoke(this, EventArgs.Empty);
+                }
+            }
         }
     }
-}
 }
