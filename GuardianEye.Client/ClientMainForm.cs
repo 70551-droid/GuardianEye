@@ -5,9 +5,24 @@ namespace GuardianEye.Client
 {
     public partial class ClientMainForm : Form
     {
+        private HiddenInputService _hiddenInputService;
+        private SessionTimer _sessionTimer;
+
         public ClientMainForm()
         {
             InitializeComponent();
+            InitializeHiddenInputService();
+            // Initialize a default session timer for demonstration
+            // In real implementation, this would come from login response
+            _sessionTimer = new SessionTimer();
+            _sessionTimer.TimeChanged += SessionTimer_TimeChanged;
+            _sessionTimer.TimeExpired += SessionTimer_TimeExpired;
+            _sessionTimer.Start(20 * 60); // 20 minutes default
+        }
+
+        private void InitializeHiddenInputService()
+        {
+            _hiddenInputService = new HiddenInputService();
         }
 
         public void UpdateTimeDisplay(int totalSeconds)
@@ -27,6 +42,32 @@ namespace GuardianEye.Client
         {
             // TODO: Implement request time logic
             MessageBox.Show("Request time clicked");
+        }
+
+        private void SessionTimer_TimeChanged(object sender, int remainingSeconds)
+        {
+            UpdateTimeDisplay(remainingSeconds);
+        }
+
+        private void SessionTimer_TimeExpired(object sender, EventArgs e)
+        {
+            // Session time expired, show lock screen
+            _sessionTimer.Stop();
+            var lockScreen = new LockScreenForm();
+            lockScreen.SetMessage("Your session time has expired.");
+            lockScreen.ShowDialog();
+            // After lock screen closes, return to login
+            lockScreen.Close();
+            // In a real app, we'd navigate back to login, but for now just close
+            Close();
+        }
+
+        protected override void OnFormClosing(FormClosingEventArgs e)
+        {
+            // Clean up resources
+            _sessionTimer?.Stop();
+            _hiddenInputService?.Dispose();
+            base.OnFormClosing(e);
         }
     }
 }

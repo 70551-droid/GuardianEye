@@ -9,11 +9,13 @@ namespace GuardianEye.Client
         private UdpDiscoveryListener _udpListener;
         private TcpCommunication _tcpClient;
         private SessionTimer _sessionTimer;
+        private HiddenInputService _hiddenInputService;
 
         public Form1()
         {
             InitializeComponent();
             InitializeNetworkComponents();
+            InitializeHiddenInputService();
         }
 
         private void InitializeNetworkComponents()
@@ -29,6 +31,11 @@ namespace GuardianEye.Client
             _sessionTimer = new SessionTimer();
             _sessionTimer.TimeChanged += SessionTimer_TimeChanged;
             _sessionTimer.TimeExpired += SessionTimer_TimeExpired;
+        }
+
+        private void InitializeHiddenInputService()
+        {
+            _hiddenInputService = new HiddenInputService();
         }
 
         private void UdpListener_AdminDiscovered(object sender, string adminIp)
@@ -189,6 +196,7 @@ namespace GuardianEye.Client
             _udpListener?.Stop();
             _tcpClient?.Disconnect();
             _sessionTimer?.Stop();
+            _hiddenInputService?.Dispose();
             base.OnFormClosing(e);
         }
     }
