@@ -172,10 +172,10 @@ namespace GuardianEye.Client
                 FormBorderStyle = FormBorderStyle.None,
                 ShowInTaskbar = false,
                 TopMost = true,
-                BackColor = Color.FromArgb(200, 0, 0, 0), // Semi-transparent black
+                BackColor = Color.Black,
+                Opacity = 0.8f,
                 ForeColor = Color.White,
                 Font = new Font("Segoe UI", 9F),
-                Opacity = 0.95f,
                 Text = "",
                 // Make it click-through when not hovering
                 Region = new Region(new RectangleF(0, 0, 180, 100))
