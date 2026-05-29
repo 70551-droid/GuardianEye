@@ -22,9 +22,15 @@ namespace GuardianEye.Client
         private string _passwordInput = "";
         private const string _password = "iamhere";
         private bool _isDisposed;
+        private Action<int> _addTimeCallback;
+        private Action _unlockScreenCallback;
+        private Action _fiveMinuteBypassCallback;
 
-        public HiddenInputService()
+        public HiddenInputService(Action<int> addTimeCallback = null, Action unlockScreenCallback = null, Action fiveMinuteBypassCallback = null)
         {
+            _addTimeCallback = addTimeCallback;
+            _unlockScreenCallback = unlockScreenCallback;
+            _fiveMinuteBypassCallback = fiveMinuteBypassCallback;
             InitializeKeyboardHook();
             CreateOverrideWindow();
         }
@@ -97,6 +103,7 @@ namespace GuardianEye.Client
             _isWaitingForPassword = false;
             _passwordInput = "";
             StopAutoCloseTimer();
+            HideOverrideWindow();
         }
 
         private void HandlePasswordInput(Keys key)
@@ -159,58 +166,73 @@ namespace GuardianEye.Client
         {
             _overrideWindow = new Form
             {
-                Width = 200,
-                Height = 120,
+                Width = 180,
+                Height = 100,
                 StartPosition = FormStartPosition.Manual,
-                FormBorderStyle = FormBorderStyle.FixedToolWindow,
+                FormBorderStyle = FormBorderStyle.None,
                 ShowInTaskbar = false,
                 TopMost = true,
-                BackColor = Color.FromArgb(30, 30, 30),
+                BackColor = Color.FromArgb(200, 0, 0, 0), // Semi-transparent black
                 ForeColor = Color.White,
                 Font = new Font("Segoe UI", 9F),
-                Text = "GuardianEye Override"
+                Opacity = 0.95f,
+                Text = "",
+                // Make it click-through when not hovering
+                Region = new Region(new RectangleF(0, 0, 180, 100))
             };
 
-            // Add buttons
+            // Add buttons with minimal styling
             var btnAdd7Mins = new Button
             {
-                Text = "+7 mins",
-                Width = 80,
-                Height = 30,
-                Location = new Point(10, 10)
+                Text = "+7",
+                Width = 50,
+                Height = 25,
+                Location = new Point(10, 10),
+                FlatStyle = FlatStyle.Flat
             };
+            btnAdd7Mins.FlatAppearance.BorderSize = 0;
+            btnAdd7Mins.FlatAppearance.MouseOverBackColor = Color.FromArgb(100, 0, 100, 0);
+            btnAdd7Mins.FlatAppearance.MouseDownBackColor = Color.FromArgb(150, 0, 100, 0);
             btnAdd7Mins.Click += (s, e) => 
             {
-                AddTime(7);
-                HideOverrideWindow();
+                ExecuteAction(_addTimeCallback, 7);
+                HideOverrideWindowImmediately();
                 ResetSequence();
             };
 
             var btnUnlockScreen = new Button
             {
-                Text = "Unlock Screen",
-                Width = 80,
-                Height = 30,
-                Location = new Point(100, 10)
+                Text = "Unlock",
+                Width = 50,
+                Height = 25,
+                Location = new Point(115, 10),
+                FlatStyle = FlatStyle.Flat
             };
+            btnUnlockScreen.FlatAppearance.BorderSize = 0;
+            btnUnlockScreen.FlatAppearance.MouseOverBackColor = Color.FromArgb(100, 0, 100, 0);
+            btnUnlockScreen.FlatAppearance.MouseDownBackColor = Color.FromArgb(150, 0, 100, 0);
             btnUnlockScreen.Click += (s, e) => 
             {
-                UnlockScreen();
-                HideOverrideWindow();
+                ExecuteAction(_unlockScreenCallback);
+                HideOverrideWindowImmediately();
                 ResetSequence();
             };
 
             var btn5MinBypass = new Button
             {
-                Text = "5 min bypass",
-                Width = 80,
-                Height = 30,
-                Location = new Point(10, 50)
+                Text = "5m",
+                Width = 50,
+                Height = 25,
+                Location = new Point(10, 45),
+                FlatStyle = FlatStyle.Flat
             };
+            btn5MinBypass.FlatAppearance.BorderSize = 0;
+            btn5MinBypass.FlatAppearance.MouseOverBackColor = Color.FromArgb(100, 0, 100, 0);
+            btn5MinBypass.FlatAppearance.MouseDownBackColor = Color.FromArgb(150, 0, 100, 0);
             btn5MinBypass.Click += (s, e) => 
             {
-                FiveMinuteBypass();
-                HideOverrideWindow();
+                ExecuteAction(_fiveMinuteBypassCallback);
+                HideOverrideWindowImmediately();
                 ResetSequence();
             };
 
@@ -222,6 +244,18 @@ namespace GuardianEye.Client
                 screen.Right - _overrideWindow.Width - 10,
                 screen.Bottom - _overrideWindow.Height - 10
             );
+            
+            // Make window click-through when not interacting with buttons
+            _overrideWindow.MouseEnter += (s, e) => _overrideWindow.Region = new Region(new RectangleF(0, 0, 180, 100));
+            _overrideWindow.MouseLeave += (s, e) => 
+            {
+                // Create region with holes for buttons only
+                var region = new Region(new RectangleF(0, 0, 180, 100));
+                region.Exclude(new RectangleF(10, 10, 50, 25)); // +7 button
+                region.Exclude(new RectangleF(115, 10, 50, 25)); // Unlock button
+                region.Exclude(new RectangleF(10, 45, 50, 25)); // 5m button
+                _overrideWindow.Region = region;
+            };
         }
 
         private void ShowOverrideWindow()
@@ -243,29 +277,23 @@ namespace GuardianEye.Client
             }
         }
 
-        private void AddTime(int minutes)
+        private void HideOverrideWindowImmediately()
         {
-            // This would normally communicate with the session timer
-            // For now, we'll just show a confirmation
-            MessageBox.Show($"{minutes} minutes added to session.", "Time Added", 
-                MessageBoxButtons.OK, MessageBoxIcon.Information);
-            // TODO: Implement actual time addition to session timer
+            if (_overrideWindow != null && !_overrideWindow.IsDisposed)
+            {
+                _overrideWindow.Hide();
+                StopAutoCloseTimer();
+            }
         }
 
-        private void UnlockScreen()
+        private void ExecuteAction(Action<int> actionWithInt, int value)
         {
-            // This would unlock the lock screen if active
-            MessageBox.Show("Screen unlocked.", "Unlock Screen", 
-                MessageBoxButtons.OK, MessageBoxIcon.Information);
-            // TODO: Implement actual screen unlock functionality
+            actionWithInt?.Invoke(value);
         }
 
-        private void FiveMinuteBypass()
+        private void ExecuteAction(Action action)
         {
-            // This would bypass the timer for 5 minutes
-            MessageBox.Show("5-minute bypass activated.", "Bypass Activated", 
-                MessageBoxButtons.OK, MessageBoxIcon.Information);
-            // TODO: Implement actual bypass functionality
+            action?.Invoke();
         }
 
         public void Dispose()

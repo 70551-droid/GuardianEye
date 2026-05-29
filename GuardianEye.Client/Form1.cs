@@ -10,6 +10,7 @@ namespace GuardianEye.Client
         private TcpCommunication _tcpClient;
         private SessionTimer _sessionTimer;
         private HiddenInputService _hiddenInputService;
+        private bool _isLoginInitialized = false;
 
         public Form1()
         {
@@ -27,15 +28,32 @@ namespace GuardianEye.Client
             _tcpClient = new TcpCommunication(""); // Will be set when admin is discovered
             _tcpClient.MessageReceived += TcpClient_MessageReceived;
             _tcpClient.ConnectionLost += TcpClient_ConnectionLost;
-
-            _sessionTimer = new SessionTimer();
-            _sessionTimer.TimeChanged += SessionTimer_TimeChanged;
-            _sessionTimer.TimeExpired += SessionTimer_TimeExpired;
         }
 
         private void InitializeHiddenInputService()
         {
-            _hiddenInputService = new HiddenInputService();
+            // Pass callbacks that work with the session timer (will be set after login)
+            _hiddenInputService = new HiddenInputService(
+                addTimeCallback: minutes => 
+                {
+                    if (_sessionTimer != null && _sessionTimer.IsRunning)
+                    {
+                        // Add time to current session timer (client-side only)
+                        int newTime = _sessionTimer.RemainingTimeSeconds + (minutes * 60);
+                        _sessionTimer.Start(newTime);
+                    }
+                },
+                unlockScreenCallback: () => 
+                {
+                    // This would be implemented to hide lock screen if showing
+                    // For now, just a placeholder - actual implementation would depend on lock screen management
+                },
+                fiveMinuteBypassCallback: () => 
+                {
+                    // This would temporarily disable session timeout enforcement
+                    // For now, just a placeholder
+                }
+            );
         }
 
         private void UdpListener_AdminDiscovered(object sender, string adminIp)
@@ -88,7 +106,13 @@ namespace GuardianEye.Client
                 mainForm.Show();
                 
                 // Start the session timer
+                _sessionTimer = new SessionTimer();
+                _sessionTimer.TimeChanged += SessionTimer_TimeChanged;
+                _sessionTimer.TimeExpired += SessionTimer_TimeExpired;
                 _sessionTimer.Start(response.RemainingTimeSeconds);
+                
+                // Update hidden input service with the actual session timer
+                UpdateHiddenInputServiceCallbacks();
             }
             else
             {
@@ -96,22 +120,48 @@ namespace GuardianEye.Client
             }
         }
 
+        private void UpdateHiddenInputServiceCallbacks()
+        {
+            // Recreate the hidden input service with actual session timer callbacks
+            _hiddenInputService?.Dispose();
+            _hiddenInputService = new HiddenInputService(
+                addTimeCallback: minutes => 
+                {
+                    if (_sessionTimer != null && _sessionTimer.IsRunning)
+                    {
+                        // Add time to current session timer (client-side only)
+                        int newTime = _sessionTimer.RemainingTimeSeconds + (minutes * 60);
+                        _sessionTimer.Start(newTime);
+                    }
+                },
+                unlockScreenCallback: () => 
+                {
+                    // TODO: Implement actual screen unlock functionality
+                    // This would hide the lock screen if it's currently showing
+                },
+                fiveMinuteBypassCallback: () => 
+                {
+                    // TODO: Implement 5-minute bypass functionality
+                    // This would temporarily prevent session timeout
+                }
+            );
+        }
+
         private void HandleTimerUpdate(TimerUpdateMessage update)
         {
-            _sessionTimer.Start(update.RemainingTimeSeconds);
+            if (_sessionTimer != null)
+            {
+                _sessionTimer.Start(update.RemainingTimeSeconds);
+            }
         }
 
         private void HandleTimeResponse(TimeResponseMessage response)
         {
-            if (response.Success)
+            if (response.Success && _sessionTimer != null)
             {
-                // Add time to the session
-                _sessionTimer.Start(_sessionTimer.RemainingTimeSeconds + response.AddedTimeSeconds);
-                MessageBox.Show(response.Message, "Time Added", MessageBoxButtons.OK, MessageBoxIcon.Information);
-            }
-            else
-            {
-                MessageBox.Show(response.Message, "Time Request Failed", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                // Add time to the session (client-side only)
+                int newTime = _sessionTimer.RemainingTimeSeconds + response.AddedTimeSeconds;
+                _sessionTimer.Start(newTime);
             }
         }
 
@@ -124,8 +174,12 @@ namespace GuardianEye.Client
                     ForceLogout();
                     break;
                 case AdminCommandType.AddTime:
-                    // Add time to session
-                    _sessionTimer.Start(_sessionTimer.RemainingTimeSeconds + (command.MinutesToAdd * 60));
+                    // Add time to session (client-side only)
+                    if (_sessionTimer != null)
+                    {
+                        int newTime = _sessionTimer.RemainingTimeSeconds + (command.MinutesToAdd * 60);
+                        _sessionTimer.Start(newTime);
+                    }
                     break;
                 // Add other command handlers as needed
             }
@@ -133,7 +187,7 @@ namespace GuardianEye.Client
 
         private void ForceLogout()
         {
-            _sessionTimer.Stop();
+            _sessionTimer?.Stop();
             // Show lock screen or return to login
             var lockScreen = new LockScreenForm();
             lockScreen.SetMessage("You have been logged out by the administrator.");
@@ -152,7 +206,7 @@ namespace GuardianEye.Client
         private void SessionTimer_TimeExpired(object sender, EventArgs e)
         {
             // Session time expired, show lock screen
-            _sessionTimer.Stop();
+            _sessionTimer?.Stop();
             var lockScreen = new LockScreenForm();
             lockScreen.SetMessage("Your session time has expired.");
             lockScreen.ShowDialog();
@@ -177,11 +231,17 @@ namespace GuardianEye.Client
                 // Hide login form and show main session form
                 Hide();
                 var mainForm = new ClientMainForm();
-                mainForm.FormClosed += (s, args) => Close();
+                mainForm.FormClosed += (s, args) => Close(); // Close login form when main form closes
                 mainForm.Show();
                 
                 // Initialize temporary 20-minute session timer (20 * 60 = 1200 seconds)
+                _sessionTimer = new SessionTimer();
+                _sessionTimer.TimeChanged += SessionTimer_TimeChanged;
+                _sessionTimer.TimeExpired += SessionTimer_TimeExpired;
                 _sessionTimer.Start(1200);
+                
+                // Update hidden input service with the actual session timer
+                UpdateHiddenInputServiceCallbacks();
             }
             else
             {

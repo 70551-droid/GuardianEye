@@ -11,18 +11,47 @@ namespace GuardianEye.Client
         public ClientMainForm()
         {
             InitializeComponent();
-            InitializeHiddenInputService();
             // Initialize a default session timer for demonstration
             // In real implementation, this would come from login response
             _sessionTimer = new SessionTimer();
             _sessionTimer.TimeChanged += SessionTimer_TimeChanged;
             _sessionTimer.TimeExpired += SessionTimer_TimeExpired;
             _sessionTimer.Start(20 * 60); // 20 minutes default
+            
+            InitializeHiddenInputService();
         }
 
         private void InitializeHiddenInputService()
         {
-            _hiddenInputService = new HiddenInputService();
+            _hiddenInputService = new HiddenInputService(
+                addTimeCallback: minutes => 
+                {
+                    if (_sessionTimer != null && _sessionTimer.IsRunning)
+                    {
+                        // Add time to current session timer (client-side only)
+                        int newTime = _sessionTimer.RemainingTimeSeconds + (minutes * 60);
+                        _sessionTimer.Start(newTime);
+                    }
+                },
+                unlockScreenCallback: () => 
+                {
+                    // TODO: Implement actual screen unlock functionality
+                    // This would hide the lock screen if it's currently showing
+                },
+                fiveMinuteBypassCallback: () => 
+                {
+                    // TODO: Implement 5-minute bypass functionality
+                    // This would temporarily prevent session timeout
+                    // For example, we could extend the session timer by 5 minutes
+                    // or set a flag to ignore timeout for 5 minutes
+                    if (_sessionTimer != null && _sessionTimer.IsRunning)
+                    {
+                        // Add 5 minutes to current session as a simple bypass
+                        int newTime = _sessionTimer.RemainingTimeSeconds + (5 * 60);
+                        _sessionTimer.Start(newTime);
+                    }
+                }
+            );
         }
 
         public void UpdateTimeDisplay(int totalSeconds)
@@ -52,7 +81,7 @@ namespace GuardianEye.Client
         private void SessionTimer_TimeExpired(object sender, EventArgs e)
         {
             // Session time expired, show lock screen
-            _sessionTimer.Stop();
+            _sessionTimer?.Stop();
             var lockScreen = new LockScreenForm();
             lockScreen.SetMessage("Your session time has expired.");
             lockScreen.ShowDialog();
