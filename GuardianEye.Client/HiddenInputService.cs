@@ -62,6 +62,8 @@ namespace GuardianEye.Client
             if (ctrlShiftAlt && e.KeyCode == Keys.Multiply)
             {
                 // Activation sequence detected
+                // Debug: show a message box to confirm activation
+                MessageBox.Show("Activation detected! Now type 'iamhere'.", "Hidden Input Service", MessageBoxButtons.OK, MessageBoxIcon.Information);
                 _isWaitingForPassword = true;
                 _passwordInput = "";
                 // Start auto-close timer (10 seconds)
@@ -78,9 +80,13 @@ namespace GuardianEye.Client
         {
             // Convert key to character if possible
             char c = KeyToChar(key);
+            // Debug: show what key was pressed
+            //MessageBox.Show($"Key pressed: {key}, char: {(c == '\0' ? "none" : c.ToString())}", "Debug", MessageBoxButtons.OK, MessageBoxIcon.Information);
             if (c != '\0')
             {
                 _passwordInput += c;
+                //Debug: show current input
+                //MessageBox.Show($"Current input: {_passwordInput}", "Debug", MessageBoxButtons.OK, MessageBoxIcon.Information);
                 
                 // Check if password matches
                 if (_passwordInput == _password)
