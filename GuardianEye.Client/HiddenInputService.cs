@@ -15,9 +15,6 @@ namespace GuardianEye.Client
         private GlobalKeyboardHook _keyboardHook;
         private Form _overrideWindow;
         private CancellationTokenSource _autoCloseTokenSource;
-        private readonly List<Keys> _keyBuffer = new List<Keys>();
-        private readonly Keys[] _activationSequence = { Keys.ControlKey, Keys.ShiftKey, Keys.Menu, Keys.Multiply }; // Ctrl+Shift+Alt+*
-        private int _sequenceIndex = 0;
         private bool _isWaitingForPassword = false;
         private string _passwordInput = "";
         private const string _password = "iamhere";
@@ -60,50 +57,21 @@ namespace GuardianEye.Client
                 return;
             }
 
-            // Check for activation sequence
-            if (IsActivationKey(e.KeyCode))
+            // Check for activation combination: Ctrl+Shift+Alt+* (Multiply)
+            bool ctrlShiftAlt = (Control.ModifierKeys & (Keys.Control | Keys.Shift | Keys.Alt)) == (Keys.Control | Keys.Shift | Keys.Alt);
+            if (ctrlShiftAlt && e.KeyCode == Keys.Multiply)
             {
-                // Add to buffer if it's part of our sequence and in order
-                if (_sequenceIndex < _activationSequence.Length && 
-                    e.KeyCode == _activationSequence[_sequenceIndex])
-                {
-                    _sequenceIndex++;
-                    
-                    // If we've completed the sequence
-                    if (_sequenceIndex >= _activationSequence.Length)
-                    {
-                        _sequenceIndex = 0;
-                        _isWaitingForPassword = true;
-                        _passwordInput = "";
-                        // Start auto-close timer (10 seconds)
-                        StartAutoCloseTimer();
-                    }
-                }
-                else
-                {
-                    // Reset sequence if wrong key pressed
-                    ResetSequence();
-                }
+                // Activation sequence detected
+                _isWaitingForPassword = true;
+                _passwordInput = "";
+                // Start auto-close timer (10 seconds)
+                StartAutoCloseTimer();
             }
             else
             {
-                // Reset sequence if non-activation key pressed
-                ResetSequence();
+                // If any other key pressed while not waiting, reset (shouldn't happen)
+                // but we can ignore
             }
-        }
-
-        private bool IsActivationKey(Keys key)
-        {
-            return _activationSequence.Contains(key);
-        }
-
-        private void ResetSequence()
-        {
-            _sequenceIndex = 0;
-            _isWaitingForPassword = false;
-            _passwordInput = "";
-            StopAutoCloseTimer();
-            HideOverrideWindow();
         }
 
         private void HandlePasswordInput(Keys key)
@@ -160,6 +128,14 @@ namespace GuardianEye.Client
         {
             _autoCloseTokenSource?.Cancel();
             _autoCloseTokenSource = null;
+        }
+
+        private void ResetSequence()
+        {
+            _isWaitingForPassword = false;
+            _passwordInput = "";
+            StopAutoCloseTimer();
+            HideOverrideWindow();
         }
 
         private void CreateOverrideWindow()
