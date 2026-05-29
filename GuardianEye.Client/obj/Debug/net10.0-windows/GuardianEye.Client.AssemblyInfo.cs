@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("GuardianEye.Client")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+5e1baee759696ac0813e3f86425321fea0ac5b92")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+5a46985c4e408a736f07727672634fa7fb928dfa")]
 [assembly: System.Reflection.AssemblyProductAttribute("GuardianEye.Client")]
 [assembly: System.Reflection.AssemblyTitleAttribute("GuardianEye.Client")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

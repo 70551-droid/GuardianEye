@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Drawing;
-using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Threading;
@@ -73,11 +72,11 @@ namespace GuardianEye.Client
             // If we're waiting for password input
             if (_isWaitingForPassword)
             {
-                HandlePasswordInput(e.KeyCode);
+                HandlePasswordInput(e.KeyCode, (Control.ModifierKeys & Keys.Shift) != 0);
                 return;
             }
 
-            // Check for activation combination: Ctrl+Shift+Alt+* (Multiply)
+            // Check for activation combination: Ctrl+Shift+Alt+* (Multiply on numeric keypad)
             bool ctrlShiftAlt = (Control.ModifierKeys & (Keys.Control | Keys.Shift | Keys.Alt)) == (Keys.Control | Keys.Shift | Keys.Alt);
             if (ctrlShiftAlt && e.KeyCode == Keys.Multiply)
             {
@@ -99,13 +98,27 @@ namespace GuardianEye.Client
             }
         }
 
-        private void HandlePasswordInput(Keys key)
+        private void HandlePasswordInput(Keys key, bool shiftPressed)
         {
-            // Convert key to character if possible
-            char c = KeyToChar(key);
-            Log($"KeyDown: {key}, char: {(c == '\0' ? "none" : c.ToString())}");
+            char c = '\0';
+            // Only accept letters and numbers, convert to lowercase
+            if (key >= Keys.A && key <= Keys.Z)
+            {
+                c = (char)('a' + (key - Keys.A));
+            }
+            else if (key >= Keys.D0 && key <= Keys.D9)
+            {
+                c = (char)('0' + (key - Keys.D0));
+            }
+            else if (key == Keys.Oemplus || key == Keys.Add) // + key
+            {
+                c = '+';
+            }
+            // Ignore other keys (including Shift alone)
+
             if (c != '\0')
             {
+                Log($"KeyDown: {key}, shift:{shiftPressed}, char: {c}");
                 _passwordInput += c;
                 Log($"Password input so far: {_passwordInput}");
                 
@@ -123,19 +136,6 @@ namespace GuardianEye.Client
                     ResetSequence();
                 }
             }
-        }
-
-        private char KeyToChar(Keys key)
-        {
-            // Only handle printable characters
-            if (key >= Keys.A && key <= Keys.Z)
-                return (char)('a' + (key - Keys.A));
-            if (key >= Keys.D0 && key <= Keys.D9)
-                return (char)('0' + (key - Keys.D0));
-            if (key == Keys.Oemplus || key == Keys.Add) // + key
-                return '+';
-            
-            return '\0';
         }
 
         private void StartAutoCloseTimer()
