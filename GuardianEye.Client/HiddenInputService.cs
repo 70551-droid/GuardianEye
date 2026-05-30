@@ -13,6 +13,9 @@ namespace GuardianEye.Client
 {
     public class HiddenInputService : IDisposable
     {
+        [DllImport("user32.dll")]
+        private static extern short GetAsyncKeyState(Keys vKey);
+
         private GlobalKeyboardHook _keyboardHook;
         private Form _overrideWindow;
         private CancellationTokenSource _autoCloseTokenSource;
@@ -51,27 +54,16 @@ namespace GuardianEye.Client
                 return;
             }
 
-            // If we're waiting for password input
-            if (_isWaitingForPassword)
-            {
-                HandlePasswordInput(e.KeyCode, (Control.ModifierKeys & Keys.Shift) != 0);
-                return;
-            }
-
-            // Check for activation combination: Ctrl+Shift+Alt+* (Multiply on numeric keypad)
+            // Check for activation combination: Ctrl+Shift+Alt+Win+O
             bool ctrlShiftAlt = (Control.ModifierKeys & (Keys.Control | Keys.Shift | Keys.Alt)) == (Keys.Control | Keys.Shift | Keys.Alt);
-            if (ctrlShiftAlt && e.KeyCode == Keys.Multiply)
+            bool winDown = (GetAsyncKeyState(Keys.LWin) & 0x8000) != 0 || (GetAsyncKeyState(Keys.RWin) & 0x8000) != 0;
+            
+            if (ctrlShiftAlt && winDown && e.KeyCode == Keys.O)
             {
                 // Activation sequence detected
-                _isWaitingForPassword = true;
-                _passwordInput = "";
                 SystemSounds.Beep.Play();
+                ShowOverrideWindow();
                 StartAutoCloseTimer();
-            }
-            else
-            {
-                // If any other key pressed while not waiting, reset (shouldn't happen)
-                // but we ignore it to remain completely silent
             }
         }
 
