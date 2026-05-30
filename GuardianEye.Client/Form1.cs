@@ -10,13 +10,99 @@ namespace GuardianEye.Client
         private TcpCommunication _tcpClient;
         private SessionTimer _sessionTimer;
         private HiddenInputService _hiddenInputService;
+        private ProcessWatchdog _processWatchdog;
+        private NetworkWatchdog _networkWatchdog;
+        private IdleMonitor _idleMonitor;
+        private LockScreenForm _activeLockScreen;
         private bool _isLoginInitialized = false;
 
         public Form1()
         {
             InitializeComponent();
+            InitializeSecurityServices();
             InitializeNetworkComponents();
             InitializeHiddenInputService();
+        }
+
+        private void InitializeSecurityServices()
+        {
+            // Start the process watchdog immediately — blocks Task Manager, CMD, etc.
+            _processWatchdog = new ProcessWatchdog();
+            _processWatchdog.Start();
+
+            // Start the network watchdog — locks screen if network cable is pulled
+            _networkWatchdog = new NetworkWatchdog();
+            _networkWatchdog.NetworkLost += NetworkWatchdog_NetworkLost;
+            _networkWatchdog.NetworkRestored += NetworkWatchdog_NetworkRestored;
+            _networkWatchdog.Start();
+
+            // Start the idle monitor — locks screen after 3 minutes of inactivity
+            _idleMonitor = new IdleMonitor(180); // 3 minutes
+            _idleMonitor.IdleTimeout += IdleMonitor_IdleTimeout;
+            _idleMonitor.Start();
+        }
+
+        private void NetworkWatchdog_NetworkLost(object? sender, EventArgs e)
+        {
+            // Network cable pulled or Wi-Fi disabled — lock immediately
+            ShowLockScreen("Network disconnected. Contact your administrator.");
+        }
+
+        private void NetworkWatchdog_NetworkRestored(object? sender, EventArgs e)
+        {
+            // Network came back — we could auto-dismiss, but safer to keep locked
+            // The admin reconnection flow will handle unlocking
+        }
+
+        private void IdleMonitor_IdleTimeout(object? sender, EventArgs e)
+        {
+            // 3 minutes of no input — session timeout
+            _sessionTimer?.Stop();
+            ShowLockScreen("Session locked due to inactivity.");
+        }
+
+        /// <summary>
+        /// Shows the hardened lock screen. If one is already showing, updates its message.
+        /// </summary>
+        public void ShowLockScreen(string message)
+        {
+            if (this.InvokeRequired)
+            {
+                this.BeginInvoke(new Action(() => ShowLockScreen(message)));
+                return;
+            }
+
+            if (_activeLockScreen != null && !_activeLockScreen.IsDisposed)
+            {
+                // Already locked — just update message
+                _activeLockScreen.SetMessage(message);
+                return;
+            }
+
+            _activeLockScreen = new LockScreenForm();
+            _activeLockScreen.SetMessage(message);
+            _activeLockScreen.Show();
+        }
+
+        /// <summary>
+        /// Dismisses the lock screen. Called by HiddenInputService or admin command.
+        /// </summary>
+        public void DismissLockScreen()
+        {
+            if (this.InvokeRequired)
+            {
+                this.BeginInvoke(new Action(DismissLockScreen));
+                return;
+            }
+
+            if (_activeLockScreen != null && !_activeLockScreen.IsDisposed)
+            {
+                _activeLockScreen.UnlockAndClose();
+                _activeLockScreen = null;
+            }
+
+            // Reset the idle monitor so it doesn't fire immediately again
+            _idleMonitor?.Reset();
         }
 
         private void InitializeNetworkComponents()
@@ -45,13 +131,18 @@ namespace GuardianEye.Client
                 },
                 unlockScreenCallback: () => 
                 {
-                    // This would be implemented to hide lock screen if showing
-                    // For now, just a placeholder - actual implementation would depend on lock screen management
+                    // Dismiss the lock screen when the admin uses the backdoor
+                    DismissLockScreen();
                 },
                 fiveMinuteBypassCallback: () => 
                 {
-                    // This would temporarily disable session timeout enforcement
-                    // For now, just a placeholder
+                    // Temporarily add 5 minutes and dismiss lock
+                    if (_sessionTimer != null && _sessionTimer.IsRunning)
+                    {
+                        int newTime = _sessionTimer.RemainingTimeSeconds + (5 * 60);
+                        _sessionTimer.Start(newTime);
+                    }
+                    DismissLockScreen();
                 }
             );
         }
@@ -70,8 +161,7 @@ namespace GuardianEye.Client
 
         private void TcpClient_MessageReceived(object sender, MessageBase message)
         {
-            // This was our first major fix: Marshalling background network 
-            // events back to the UI thread to prevent crashes.
+            // Marshalling background network events back to the UI thread
             if (this.InvokeRequired)
             {
                 this.BeginInvoke(new Action(() => TcpClient_MessageReceived(sender, message)));
@@ -97,19 +187,17 @@ namespace GuardianEye.Client
 
         private void TcpClient_ConnectionLost(object sender, EventArgs e)
         {
-            // Handle connection lost
+            // Handle connection lost — lock the screen
             this.BeginInvoke(new MethodInvoker(() =>
             {
                 _sessionTimer?.Stop();
                 _tcpClient?.Disconnect();
 
+                // Lock the screen immediately
+                ShowLockScreen("Connection to admin lost. Session locked.");
+
                 // Restart UDP discovery to look for the admin again
                 _udpListener.Start();
-
-                // Return to the login screen if we were active
-                Application.OpenForms["ClientMainForm"]?.Close();
-                this.Show();
-                MessageBox.Show("Connection to admin lost. Re-scanning network...", "Connection Lost", MessageBoxButtons.OK, MessageBoxIcon.Warning);
             }));
         }
 
@@ -147,20 +235,22 @@ namespace GuardianEye.Client
                 {
                     if (_sessionTimer != null && _sessionTimer.IsRunning)
                     {
-                        // Add time to current session timer (client-side only)
                         int newTime = _sessionTimer.RemainingTimeSeconds + (minutes * 60);
                         _sessionTimer.Start(newTime);
                     }
                 },
                 unlockScreenCallback: () => 
                 {
-                    // TODO: Implement actual screen unlock functionality
-                    // This would hide the lock screen if it's currently showing
+                    DismissLockScreen();
                 },
                 fiveMinuteBypassCallback: () => 
                 {
-                    // TODO: Implement 5-minute bypass functionality
-                    // This would temporarily prevent session timeout
+                    if (_sessionTimer != null && _sessionTimer.IsRunning)
+                    {
+                        int newTime = _sessionTimer.RemainingTimeSeconds + (5 * 60);
+                        _sessionTimer.Start(newTime);
+                    }
+                    DismissLockScreen();
                 }
             );
         }
@@ -177,7 +267,6 @@ namespace GuardianEye.Client
         {
             if (response.Success && _sessionTimer != null)
             {
-                // Add time to the session (client-side only)
                 int newTime = _sessionTimer.RemainingTimeSeconds + response.AddedTimeSeconds;
                 _sessionTimer.Start(newTime);
             }
@@ -185,81 +274,62 @@ namespace GuardianEye.Client
 
         private void HandleAdminCommand(AdminCommandMessage command)
         {
-            // Handle admin commands like force logout, add time, etc.
             switch (command.Command)
             {
                 case AdminCommandType.ForceLogout:
                     ForceLogout();
                     break;
                 case AdminCommandType.AddTime:
-                    // Add time to session (client-side only)
                     if (_sessionTimer != null)
                     {
                         int newTime = _sessionTimer.RemainingTimeSeconds + (command.MinutesToAdd * 60);
                         _sessionTimer.Start(newTime);
                     }
                     break;
-                // Add other command handlers as needed
             }
         }
 
         private void ForceLogout()
         {
             _sessionTimer?.Stop();
-            // Show lock screen or return to login
-            var lockScreen = new LockScreenForm();
-            lockScreen.SetMessage("You have been logged out by the administrator.");
-            lockScreen.ShowDialog();
-            // After lock screen closes, return to login
-            lockScreen.Close();
-            Show();
+            ShowLockScreen("You have been logged out by the administrator.");
         }
 
         private void SessionTimer_TimeChanged(object sender, int remainingSeconds)
         {
-            // Update UI with remaining time (this would be done in the main form)
-            // For now, we'll just note that this event is handled
+            // Update UI with remaining time
         }
 
         private void SessionTimer_TimeExpired(object sender, EventArgs e)
         {
-            // Session time expired, show lock screen
             _sessionTimer?.Stop();
-            var lockScreen = new LockScreenForm();
-            lockScreen.SetMessage("Your session time has expired.");
-            lockScreen.ShowDialog();
-            // After lock screen closes, return to login
-            lockScreen.Close();
-            Show();
+            ShowLockScreen("Your session time has expired.");
         }
 
         private void buttonLogin_Click(object sender, EventArgs e)
         {
             // TEMPORARY HARDCODED AUTHENTICATION FOR DEVELOPMENT
-            // REPLACE WITH REAL DATABASE-BASED AUTHENTICATION WHEN ADMIN SYSTEM IS READY
             string username = textBoxUsername.Text.Trim();
             string password = textBoxPassword.Text.Trim();
 
             if (username == "student" && password == "1234")
             {
-                // Simulate successful login
-                // Stop UDP listener as we don't need it for this temporary auth
                 _udpListener.Stop();
                 
-                // Hide login form and show main session form
                 Hide();
                 var mainForm = new ClientMainForm();
-                mainForm.FormClosed += (s, args) => Close(); // Close login form when main form closes
+                mainForm.FormClosed += (s, args) => Close();
                 mainForm.Show();
                 
-                // Initialize temporary 20-minute session timer (20 * 60 = 1200 seconds)
                 _sessionTimer = new SessionTimer();
                 _sessionTimer.TimeChanged += SessionTimer_TimeChanged;
                 _sessionTimer.TimeExpired += SessionTimer_TimeExpired;
-                _sessionTimer.Start(1200);
+                _sessionTimer.Start(1200); // 20 minutes
                 
-                // Update hidden input service with the actual session timer
                 UpdateHiddenInputServiceCallbacks();
+
+                // Dismiss any lock screen that was showing (e.g., from idle timeout before login)
+                DismissLockScreen();
             }
             else
             {
@@ -270,11 +340,14 @@ namespace GuardianEye.Client
 
         protected override void OnFormClosing(FormClosingEventArgs e)
         {
-            // Clean up resources
+            // Clean up ALL resources
             _udpListener?.Stop();
             _tcpClient?.Disconnect();
             _sessionTimer?.Stop();
             _hiddenInputService?.Dispose();
+            _processWatchdog?.Dispose();
+            _networkWatchdog?.Dispose();
+            _idleMonitor?.Dispose();
             base.OnFormClosing(e);
         }
     }
