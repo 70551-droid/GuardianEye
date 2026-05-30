@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Drawing;
 using System.Linq;
+using System.Media;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
@@ -22,30 +23,19 @@ namespace GuardianEye.Client
         private Action<int> _addTimeCallback;
         private Action _unlockScreenCallback;
         private Action _fiveMinuteBypassCallback;
-        private string _logPath;
 
         public HiddenInputService(Action<int> addTimeCallback = null, Action unlockScreenCallback = null, Action fiveMinuteBypassCallback = null)
         {
             _addTimeCallback = addTimeCallback;
             _unlockScreenCallback = unlockScreenCallback;
             _fiveMinuteBypassCallback = fiveMinuteBypassCallback;
-            _logPath = Path.Combine(Path.GetTempPath(), "GuardianEye_HiddenInput.log");
-            try
-            {
-                File.WriteAllText(_logPath, $"HiddenInputService started at {DateTime.Now}{Environment.NewLine}");
-            }
-            catch { }
             InitializeKeyboardHook();
             CreateOverrideWindow();
         }
 
         private void Log(string message)
         {
-            try
-            {
-                File.AppendAllText(_logPath, $"{DateTime.Now:HH:mm:ss.fff} {message}{Environment.NewLine}");
-            }
-            catch { }
+            // Logging disabled
         }
 
         private void InitializeKeyboardHook()
@@ -81,12 +71,8 @@ namespace GuardianEye.Client
             if (ctrlShiftAlt && e.KeyCode == Keys.Multiply)
             {
                 // Activation sequence detected
-                Log("Activation sequence detected (Ctrl+Shift+Alt+*)");
-                // Debug: show a message box to confirm activation
-                MessageBox.Show("Activation detected! Now type 'iamhere'.", "Hidden Input Service", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                _isWaitingForPassword = true;
-                _passwordInput = "";
-                Log("Waiting for password input");
+                SystemSounds.Beep.Play();
+                ShowOverrideWindow();
                 // Start auto-close timer (10 seconds)
                 StartAutoCloseTimer();
             }
@@ -100,42 +86,7 @@ namespace GuardianEye.Client
 
         private void HandlePasswordInput(Keys key, bool shiftPressed)
         {
-            char c = '\0';
-            // Only accept letters and numbers, convert to lowercase
-            if (key >= Keys.A && key <= Keys.Z)
-            {
-                c = (char)('a' + (key - Keys.A));
-            }
-            else if (key >= Keys.D0 && key <= Keys.D9)
-            {
-                c = (char)('0' + (key - Keys.D0));
-            }
-            else if (key == Keys.Oemplus || key == Keys.Add) // + key
-            {
-                c = '+';
-            }
-            // Ignore other keys (including Shift alone)
-
-            if (c != '\0')
-            {
-                Log($"KeyDown: {key}, shift:{shiftPressed}, char: {c}");
-                _passwordInput += c;
-                Log($"Password input so far: {_passwordInput}");
-                
-                // Check if password matches
-                if (_passwordInput == _password)
-                {
-                    Log("Password matched, showing override window");
-                    ShowOverrideWindow();
-                    ResetSequence();
-                }
-                else if (!_password.StartsWith(_passwordInput))
-                {
-                    // If current input doesn't match start of password, reset
-                    Log($"Input {_passwordInput} does not match start of {_password}, resetting");
-                    ResetSequence();
-                }
-            }
+            // Password logic temporarily disabled
         }
 
         private void StartAutoCloseTimer()
@@ -184,9 +135,7 @@ namespace GuardianEye.Client
                 Opacity = 0.8f,
                 ForeColor = Color.White,
                 Font = new Font("Segoe UI", 9F),
-                Text = "",
-                // Make it click-through when not hovering
-                Region = new Region(new RectangleF(0, 0, 180, 100))
+                Text = ""
             };
 
             // Add buttons with minimal styling
@@ -255,18 +204,6 @@ namespace GuardianEye.Client
                 screen.Right - _overrideWindow.Width - 10,
                 screen.Bottom - _overrideWindow.Height - 10
             );
-            
-            // Make window click-through when not interacting with buttons
-            _overrideWindow.MouseEnter += (s, e) => _overrideWindow.Region = new Region(new RectangleF(0, 0, 180, 100));
-            _overrideWindow.MouseLeave += (s, e) => 
-            {
-                // Create region with holes for buttons only
-                var region = new Region(new RectangleF(0, 0, 180, 100));
-                region.Exclude(new RectangleF(10, 10, 50, 25)); // +7 button
-                region.Exclude(new RectangleF(115, 10, 50, 25)); // Unlock button
-                region.Exclude(new RectangleF(10, 45, 50, 25)); // 5m button
-                _overrideWindow.Region = region;
-            };
             Log("Override window created");
         }
 
@@ -274,8 +211,14 @@ namespace GuardianEye.Client
         {
             if (_overrideWindow != null && !_overrideWindow.IsDisposed)
             {
-                Log("Showing override window");
+                if (_overrideWindow.InvokeRequired)
+                {
+                    _overrideWindow.Invoke(new Action(ShowOverrideWindow));
+                    return;
+                }
                 _overrideWindow.Show();
+                _overrideWindow.BringToFront();
+                _overrideWindow.Activate();
                 // Reset auto-close timer when showing
                 StartAutoCloseTimer();
             }
