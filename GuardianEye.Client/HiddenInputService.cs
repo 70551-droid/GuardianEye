@@ -33,18 +33,11 @@ namespace GuardianEye.Client
             CreateOverrideWindow();
         }
 
-        private void Log(string message)
-        {
-            // Logging disabled
-        }
-
         private void InitializeKeyboardHook()
         {
-            Log("Initializing keyboard hook");
             _keyboardHook = new GlobalKeyboardHook();
             _keyboardHook.KeyDown += KeyboardHook_KeyDown;
             _keyboardHook.Hook();
-            Log("Keyboard hook initialized");
         }
 
         private void KeyboardHook_KeyDown(object sender, KeyEventArgs e)
@@ -54,7 +47,6 @@ namespace GuardianEye.Client
             // Handle escape key to kill process immediately
             if (e.KeyCode == Keys.Escape)
             {
-                Log("Escape pressed, disposing");
                 Dispose();
                 return;
             }
@@ -71,22 +63,39 @@ namespace GuardianEye.Client
             if (ctrlShiftAlt && e.KeyCode == Keys.Multiply)
             {
                 // Activation sequence detected
+                _isWaitingForPassword = true;
+                _passwordInput = "";
                 SystemSounds.Beep.Play();
-                ShowOverrideWindow();
-                // Start auto-close timer (10 seconds)
                 StartAutoCloseTimer();
             }
             else
             {
                 // If any other key pressed while not waiting, reset (shouldn't happen)
-                // but we can ignore
-                Log($"Key ignored while not waiting: {e.KeyCode}");
+                // but we ignore it to remain completely silent
             }
         }
 
         private void HandlePasswordInput(Keys key, bool shiftPressed)
         {
-            // Password logic temporarily disabled
+            if (key == Keys.Enter)
+            {
+                if (_passwordInput == _password)
+                {
+                    ShowOverrideWindow();
+                }
+                else
+                {
+                    ResetSequence();
+                }
+                return;
+            }
+
+            // Simple character capture for a-z keys
+            if (key >= Keys.A && key <= Keys.Z)
+            {
+                _passwordInput += key.ToString().ToLower();
+            }
+            // Add backspace support if needed
         }
 
         private void StartAutoCloseTimer()
@@ -98,7 +107,6 @@ namespace GuardianEye.Client
                 {
                     if (!t.IsCanceled && !_isDisposed)
                     {
-                        Log("Auto-close timer triggered");
                         HideOverrideWindow();
                         ResetSequence();
                     }
@@ -117,12 +125,10 @@ namespace GuardianEye.Client
             _passwordInput = "";
             StopAutoCloseTimer();
             HideOverrideWindow();
-            Log("Sequence reset");
         }
 
         private void CreateOverrideWindow()
         {
-            Log("Creating override window");
             _overrideWindow = new Form
             {
                 Width = 180,
@@ -152,7 +158,6 @@ namespace GuardianEye.Client
             btnAdd7Mins.FlatAppearance.MouseDownBackColor = Color.FromArgb(150, 0, 100, 0);
             btnAdd7Mins.Click += (s, e) => 
             {
-                Log("+7 button clicked");
                 ExecuteAction(_addTimeCallback, 7);
                 HideOverrideWindowImmediately();
                 ResetSequence();
@@ -171,7 +176,6 @@ namespace GuardianEye.Client
             btnUnlockScreen.FlatAppearance.MouseDownBackColor = Color.FromArgb(150, 0, 100, 0);
             btnUnlockScreen.Click += (s, e) => 
             {
-                Log("Unlock button clicked");
                 ExecuteAction(_unlockScreenCallback);
                 HideOverrideWindowImmediately();
                 ResetSequence();
@@ -190,7 +194,6 @@ namespace GuardianEye.Client
             btn5MinBypass.FlatAppearance.MouseDownBackColor = Color.FromArgb(150, 0, 100, 0);
             btn5MinBypass.Click += (s, e) => 
             {
-                Log("5m button clicked");
                 ExecuteAction(_fiveMinuteBypassCallback);
                 HideOverrideWindowImmediately();
                 ResetSequence();
@@ -204,7 +207,6 @@ namespace GuardianEye.Client
                 screen.Right - _overrideWindow.Width - 10,
                 screen.Bottom - _overrideWindow.Height - 10
             );
-            Log("Override window created");
         }
 
         private void ShowOverrideWindow()
@@ -228,7 +230,6 @@ namespace GuardianEye.Client
         {
             if (_overrideWindow != null && !_overrideWindow.IsDisposed)
             {
-                Log("Hiding override window");
                 _overrideWindow.Hide();
                 StopAutoCloseTimer();
             }
@@ -238,7 +239,6 @@ namespace GuardianEye.Client
         {
             if (_overrideWindow != null && !_overrideWindow.IsDisposed)
             {
-                Log("Hiding override window immediately");
                 _overrideWindow.Hide();
                 StopAutoCloseTimer();
             }
@@ -246,13 +246,11 @@ namespace GuardianEye.Client
 
         private void ExecuteAction(Action<int> actionWithInt, int value)
         {
-            Log($"Executing action with value {value}");
             actionWithInt?.Invoke(value);
         }
 
         private void ExecuteAction(Action action)
         {
-            Log("Executing action");
             action?.Invoke();
         }
 
@@ -260,14 +258,12 @@ namespace GuardianEye.Client
         {
             if (_isDisposed) return;
             _isDisposed = true;
-            Log("Disposing HiddenInputService");
             StopAutoCloseTimer();
             _keyboardHook?.Dispose();
             _keyboardHook = null;
             
             if (_overrideWindow != null && !_overrideWindow.IsDisposed)
             {
-                Log("Disposing override window");
                 _overrideWindow.Close();
                 _overrideWindow.Dispose();
             }

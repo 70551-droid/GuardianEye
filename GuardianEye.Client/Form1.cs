@@ -70,7 +70,14 @@ namespace GuardianEye.Client
 
         private void TcpClient_MessageReceived(object sender, MessageBase message)
         {
-            // Handle incoming messages from admin
+            // This was our first major fix: Marshalling background network 
+            // events back to the UI thread to prevent crashes.
+            if (this.InvokeRequired)
+            {
+                this.BeginInvoke(new Action(() => TcpClient_MessageReceived(sender, message)));
+                return;
+            }
+
             switch (message.Type)
             {
                 case MessageType.LoginResponse:
@@ -91,8 +98,19 @@ namespace GuardianEye.Client
         private void TcpClient_ConnectionLost(object sender, EventArgs e)
         {
             // Handle connection lost
-            MessageBox.Show("Connection to admin lost.", "Connection Lost", MessageBoxButtons.OK, MessageBoxIcon.Error);
-            // Try to reconnect or go back to login
+            this.BeginInvoke(new MethodInvoker(() =>
+            {
+                _sessionTimer?.Stop();
+                _tcpClient?.Disconnect();
+
+                // Restart UDP discovery to look for the admin again
+                _udpListener.Start();
+
+                // Return to the login screen if we were active
+                Application.OpenForms["ClientMainForm"]?.Close();
+                this.Show();
+                MessageBox.Show("Connection to admin lost. Re-scanning network...", "Connection Lost", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            }));
         }
 
         private void HandleLoginResponse(LoginResponseMessage response)
