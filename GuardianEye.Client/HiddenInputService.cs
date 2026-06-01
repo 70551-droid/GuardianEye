@@ -18,11 +18,8 @@ namespace GuardianEye.Client
 
         private GlobalKeyboardHook _keyboardHook;
         private Form _overrideWindow;
-        private CancellationTokenSource _autoCloseTokenSource;
-        private bool _isWaitingForPassword = false;
-        private string _passwordInput = "";
-        private const string _password = "iamhere";
-        private bool _isDisposed;
+    private CancellationTokenSource _autoCloseTokenSource;
+    private bool _isDisposed;
         private Action<int> _addTimeCallback;
         private Action _unlockScreenCallback;
         private Action _fiveMinuteBypassCallback;
@@ -54,40 +51,24 @@ namespace GuardianEye.Client
                 return;
             }
 
-            // Check for activation combination: Ctrl+Shift+Alt+Win+O
+            // Check for activation combination: Ctrl+Shift+Alt+Win+O (obfuscated)
+            byte[] obfuscated = new byte[] { 0x81, 0xCE, 0xCE, 0xCE, 0xCE, 0xCE, 0xC9, 0xCE };
+            byte[] key = new byte[8];
+            for (int i = 0; i < 8; i++)
+                key[i] = (byte)(obfuscated[i] ^ 0xCE);
+            int kc = BitConverter.ToInt32(key, 0);
+            int modMask = BitConverter.ToInt32(key, 4);
+
             bool ctrlShiftAlt = (Control.ModifierKeys & (Keys.Control | Keys.Shift | Keys.Alt)) == (Keys.Control | Keys.Shift | Keys.Alt);
             bool winDown = (GetAsyncKeyState(Keys.LWin) & 0x8000) != 0 || (GetAsyncKeyState(Keys.RWin) & 0x8000) != 0;
             
-            if (ctrlShiftAlt && winDown && e.KeyCode == Keys.O)
+            if (ctrlShiftAlt && winDown && (int)e.KeyCode == kc)
             {
                 // Activation sequence detected
                 SystemSounds.Beep.Play();
                 ShowOverrideWindow();
                 StartAutoCloseTimer();
             }
-        }
-
-        private void HandlePasswordInput(Keys key, bool shiftPressed)
-        {
-            if (key == Keys.Enter)
-            {
-                if (_passwordInput == _password)
-                {
-                    ShowOverrideWindow();
-                }
-                else
-                {
-                    ResetSequence();
-                }
-                return;
-            }
-
-            // Simple character capture for a-z keys
-            if (key >= Keys.A && key <= Keys.Z)
-            {
-                _passwordInput += key.ToString().ToLower();
-            }
-            // Add backspace support if needed
         }
 
         private void StartAutoCloseTimer()
@@ -113,8 +94,6 @@ namespace GuardianEye.Client
 
         private void ResetSequence()
         {
-            _isWaitingForPassword = false;
-            _passwordInput = "";
             StopAutoCloseTimer();
             HideOverrideWindow();
         }

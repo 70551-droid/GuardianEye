@@ -1,354 +1,372 @@
-using System;
-using System.Windows.Forms;
+using System.Diagnostics;
+using System.Net.Sockets;
 using GuardianEye.Shared;
 
-namespace GuardianEye.Client
+namespace GuardianEye.Client;
+
+public partial class Form1 : Form
 {
-    public partial class Form1 : Form
+    private UdpDiscoveryListener _udpListener;
+    private TcpCommunication _tcpClient;
+    private SessionTimer _sessionTimer;
+    private ProcessWatchdog _processWatchdog;
+    private NetworkWatchdog _networkWatchdog;
+    private IdleMonitor _idleMonitor;
+    private LockScreenForm _activeLockScreen;
+    private ClientMainForm _mainForm;
+    private WebsiteFilterService _websiteFilter;
+    private BrowserRestrictionService _browserRestriction;
+    private ForegroundMonitorService _foregroundMonitor;
+    private FileStream _selfFileLock;
+
+    public Form1()
     {
-        private UdpDiscoveryListener _udpListener;
-        private TcpCommunication _tcpClient;
-        private SessionTimer _sessionTimer;
-        private HiddenInputService _hiddenInputService;
-        private ProcessWatchdog _processWatchdog;
-        private NetworkWatchdog _networkWatchdog;
-        private IdleMonitor _idleMonitor;
-        private LockScreenForm _activeLockScreen;
-        private bool _isLoginInitialized = false;
+        InitializeComponent();
+        _sessionTimer = new SessionTimer();
+        _sessionTimer.FiveMinuteWarning += (_, _) => MessageBox.Show("Only 5 minutes remaining!", "Time Warning", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+        _sessionTimer.TwoMinuteWarning += (_, _) => MessageBox.Show("Only 2 minutes remaining!", "Time Warning", MessageBoxButtons.OK, MessageBoxIcon.Warning);
 
-        public Form1()
+        InitializeSecurityServices();
+        InitializeNetworkComponents();
+
+        _websiteFilter = new WebsiteFilterService();
+        _browserRestriction = new BrowserRestrictionService();
+        _browserRestriction.Start();
+        _foregroundMonitor = new ForegroundMonitorService(_tcpClient, "");
+
+        LockOwnExe();
+        ShowLockScreen("System locked. Login to begin your session.");
+
+        Load += (_, _) => UIStyles.EnableRoundedCorners(Handle);
+    }
+
+    private void LockOwnExe()
+    {
+        try
         {
-            InitializeComponent();
-            InitializeSecurityServices();
-            InitializeNetworkComponents();
-            InitializeHiddenInputService();
+            string exePath = Process.GetCurrentProcess().MainModule.FileName;
+            _selfFileLock = new FileStream(exePath, FileMode.Open, FileAccess.Read, FileShare.Read);
+        }
+        catch { }
+    }
+
+    private void InitializeSecurityServices()
+    {
+        _processWatchdog = new ProcessWatchdog();
+        _processWatchdog.Start();
+        _processWatchdog.SetTcpClient(_tcpClient, "");
+
+        _networkWatchdog = new NetworkWatchdog();
+        _networkWatchdog.NetworkLost += NetworkWatchdog_NetworkLost;
+        _networkWatchdog.NetworkRestored += NetworkWatchdog_NetworkRestored;
+        _networkWatchdog.Start();
+
+        _idleMonitor = new IdleMonitor(180);
+        _idleMonitor.IdleTimeout += IdleMonitor_IdleTimeout;
+        _idleMonitor.Start();
+    }
+
+    private void NetworkWatchdog_NetworkLost(object? sender, EventArgs e)
+    {
+        EndSession("Network disconnected. Contact your administrator.");
+    }
+
+    private void NetworkWatchdog_NetworkRestored(object? sender, EventArgs e)
+    {
+    }
+
+    private void IdleMonitor_IdleTimeout(object? sender, EventArgs e)
+    {
+        _sessionTimer?.Stop();
+        EndSession("Session locked due to inactivity.");
+    }
+
+    public void EndSession(string message)
+    {
+        if (this.InvokeRequired)
+        {
+            this.BeginInvoke(new Action(() => EndSession(message)));
+            return;
         }
 
-        private void InitializeSecurityServices()
+        _mainForm?.Close();
+        _mainForm = null;
+        _sessionTimer?.Stop();
+        Show();
+        ShowLockScreen(message);
+    }
+
+    public void ShowLockScreen(string message)
+    {
+        if (this.InvokeRequired)
         {
-            // Start the process watchdog immediately — blocks Task Manager, CMD, etc.
-            _processWatchdog = new ProcessWatchdog();
-            _processWatchdog.Start();
-
-            // Start the network watchdog — locks screen if network cable is pulled
-            _networkWatchdog = new NetworkWatchdog();
-            _networkWatchdog.NetworkLost += NetworkWatchdog_NetworkLost;
-            _networkWatchdog.NetworkRestored += NetworkWatchdog_NetworkRestored;
-            _networkWatchdog.Start();
-
-            // Start the idle monitor — locks screen after 3 minutes of inactivity
-            _idleMonitor = new IdleMonitor(180); // 3 minutes
-            _idleMonitor.IdleTimeout += IdleMonitor_IdleTimeout;
-            _idleMonitor.Start();
+            this.BeginInvoke(new Action(() => ShowLockScreen(message)));
+            return;
         }
 
-        private void NetworkWatchdog_NetworkLost(object? sender, EventArgs e)
+        if (_activeLockScreen != null && !_activeLockScreen.IsDisposed)
         {
-            // Network cable pulled or Wi-Fi disabled — lock immediately
-            ShowLockScreen("Network disconnected. Contact your administrator.");
-        }
-
-        private void NetworkWatchdog_NetworkRestored(object? sender, EventArgs e)
-        {
-            // Network came back — we could auto-dismiss, but safer to keep locked
-            // The admin reconnection flow will handle unlocking
-        }
-
-        private void IdleMonitor_IdleTimeout(object? sender, EventArgs e)
-        {
-            // 3 minutes of no input — session timeout
-            _sessionTimer?.Stop();
-            ShowLockScreen("Session locked due to inactivity.");
-        }
-
-        /// <summary>
-        /// Shows the hardened lock screen. If one is already showing, updates its message.
-        /// </summary>
-        public void ShowLockScreen(string message)
-        {
-            if (this.InvokeRequired)
-            {
-                this.BeginInvoke(new Action(() => ShowLockScreen(message)));
-                return;
-            }
-
-            if (_activeLockScreen != null && !_activeLockScreen.IsDisposed)
-            {
-                // Already locked — just update message
-                _activeLockScreen.SetMessage(message);
-                return;
-            }
-
-            _activeLockScreen = new LockScreenForm();
             _activeLockScreen.SetMessage(message);
-            _activeLockScreen.Show();
+            return;
         }
 
-        /// <summary>
-        /// Dismisses the lock screen. Called by HiddenInputService or admin command.
-        /// </summary>
-        public void DismissLockScreen()
+        _activeLockScreen = new LockScreenForm();
+        _activeLockScreen.SetMessage(message);
+        _activeLockScreen.Show();
+        _activeLockScreen.BringToFront();
+    }
+
+    public void DismissLockScreen()
+    {
+        if (this.InvokeRequired)
         {
-            if (this.InvokeRequired)
-            {
-                this.BeginInvoke(new Action(DismissLockScreen));
-                return;
-            }
-
-            if (_activeLockScreen != null && !_activeLockScreen.IsDisposed)
-            {
-                _activeLockScreen.UnlockAndClose();
-                _activeLockScreen = null;
-            }
-
-            // Reset the idle monitor so it doesn't fire immediately again
-            _idleMonitor?.Reset();
+            this.BeginInvoke(new Action(DismissLockScreen));
+            return;
         }
 
-        private void InitializeNetworkComponents()
+        if (_activeLockScreen != null && !_activeLockScreen.IsDisposed)
         {
-            _udpListener = new UdpDiscoveryListener();
-            _udpListener.AdminDiscovered += UdpListener_AdminDiscovered;
+            _activeLockScreen.UnlockAndClose();
+            _activeLockScreen = null;
+        }
+
+        _idleMonitor?.Reset();
+    }
+
+    private void InitializeNetworkComponents()
+    {
+        _udpListener = new UdpDiscoveryListener();
+        _udpListener.AdminDiscovered += UdpListener_AdminDiscovered;
+        _udpListener.Start();
+
+        _tcpClient = new TcpCommunication("");
+        _tcpClient.MessageReceived += TcpClient_MessageReceived;
+        _tcpClient.ConnectionLost += TcpClient_ConnectionLost;
+
+        ThreadPool.QueueUserWorkItem(_ =>
+        {
+            Thread.Sleep(2000);
+            _foregroundMonitor?.Start();
+        });
+    }
+
+    private void HandleChatMessage(ChatMessage chat)
+    {
+        var notif = new ChatNotificationForm(chat.Sender, chat.Message);
+        notif.Show();
+    }
+
+    private void UdpListener_AdminDiscovered(object? sender, string adminIp)
+    {
+        _udpListener.Stop();
+        _tcpClient = new TcpCommunication(adminIp);
+        _tcpClient.MessageReceived += TcpClient_MessageReceived;
+        _tcpClient.ConnectionLost += TcpClient_ConnectionLost;
+        _tcpClient.Connect();
+        _browserRestriction.SetTcpClient(_tcpClient, "");
+        _processWatchdog.SetTcpClient(_tcpClient, "");
+        _foregroundMonitor.SetTcpClient(_tcpClient, "");
+    }
+
+    private void TcpClient_MessageReceived(object? sender, MessageBase message)
+    {
+        if (this.InvokeRequired)
+        {
+            this.BeginInvoke(new Action(() => TcpClient_MessageReceived(sender, message)));
+            return;
+        }
+
+        switch (message.Type)
+        {
+            case MessageType.LoginResponse:
+                HandleLoginResponse((LoginResponseMessage)message);
+                break;
+            case MessageType.TimerUpdate:
+                HandleTimerUpdate((TimerUpdateMessage)message);
+                break;
+            case MessageType.TimeResponse:
+                HandleTimeResponse((TimeResponseMessage)message);
+                break;
+            case MessageType.AdminCommand:
+                HandleAdminCommand((AdminCommandMessage)message);
+                break;
+            case MessageType.FilterUpdate:
+                HandleFilterUpdate((FilterUpdateMessage)message);
+                break;
+            case MessageType.Chat:
+                HandleChatMessage((ChatMessage)message);
+                break;
+        }
+    }
+
+    private void TcpClient_ConnectionLost(object? sender, EventArgs e)
+    {
+        this.BeginInvoke(new MethodInvoker(() =>
+        {
+            _sessionTimer?.Stop();
+            _tcpClient?.Disconnect();
+            EndSession("Connection to admin lost. Session locked.");
             _udpListener.Start();
+        }));
+    }
 
-            _tcpClient = new TcpCommunication(""); // Will be set when admin is discovered
-            _tcpClient.MessageReceived += TcpClient_MessageReceived;
-            _tcpClient.ConnectionLost += TcpClient_ConnectionLost;
-        }
-
-        private void InitializeHiddenInputService()
+    private void HandleLoginResponse(LoginResponseMessage response)
+    {
+        if (response.Success)
         {
-            // Pass callbacks that work with the session timer (will be set after login)
-            _hiddenInputService = new HiddenInputService(
-                addTimeCallback: minutes => 
-                {
-                    if (_sessionTimer != null && _sessionTimer.IsRunning)
-                    {
-                        // Add time to current session timer (client-side only)
-                        int newTime = _sessionTimer.RemainingTimeSeconds + (minutes * 60);
-                        _sessionTimer.Start(newTime);
-                    }
-                },
-                unlockScreenCallback: () => 
-                {
-                    // Dismiss the lock screen when the admin uses the backdoor
-                    DismissLockScreen();
-                },
-                fiveMinuteBypassCallback: () => 
-                {
-                    // Temporarily add 5 minutes and dismiss lock
-                    if (_sessionTimer != null && _sessionTimer.IsRunning)
-                    {
-                        int newTime = _sessionTimer.RemainingTimeSeconds + (5 * 60);
-                        _sessionTimer.Start(newTime);
-                    }
-                    DismissLockScreen();
-                }
-            );
-        }
-
-        private void UdpListener_AdminDiscovered(object sender, string adminIp)
-        {
-            // Stop listening for more broadcasts
-            _udpListener.Stop();
-
-            // Set up TCP connection to the admin
-            _tcpClient = new TcpCommunication(adminIp);
-            _tcpClient.MessageReceived += TcpClient_MessageReceived;
-            _tcpClient.ConnectionLost += TcpClient_ConnectionLost;
-            _tcpClient.Connect();
-        }
-
-        private void TcpClient_MessageReceived(object sender, MessageBase message)
-        {
-            // Marshalling background network events back to the UI thread
-            if (this.InvokeRequired)
+            _browserRestriction.SetTcpClient(_tcpClient, response.StudentName);
+            _processWatchdog.SetTcpClient(_tcpClient, response.StudentName);
+            _foregroundMonitor.SetTcpClient(_tcpClient, response.StudentName);
+            Hide();
+            _mainForm = new ClientMainForm(response.RemainingTimeSeconds, _sessionTimer);
+            _mainForm.FormClosed += (s, args) =>
             {
-                this.BeginInvoke(new Action(() => TcpClient_MessageReceived(sender, message)));
+                Show();
+                ShowLockScreen("Session ended. Login again to continue.");
+            };
+            _mainForm.Show();
+
+            _sessionTimer.TimeChanged += SessionTimer_TimeChanged;
+            _sessionTimer.TimeExpired += SessionTimer_TimeExpired;
+            _sessionTimer.Start(response.RemainingTimeSeconds);
+
+            DismissLockScreen();
+        }
+        else
+        {
+            MessageBox.Show(response.Message, "Login Failed", MessageBoxButtons.OK, MessageBoxIcon.Error);
+        }
+    }
+
+    private void HandleTimerUpdate(TimerUpdateMessage update)
+    {
+        if (_sessionTimer != null)
+            _sessionTimer.Start(update.RemainingTimeSeconds);
+    }
+
+    private void HandleTimeResponse(TimeResponseMessage response)
+    {
+        if (response.Success && _sessionTimer != null)
+        {
+            int newTime = _sessionTimer.RemainingTimeSeconds + response.AddedTimeSeconds;
+            _sessionTimer.Start(newTime);
+        }
+    }
+
+    private void HandleFilterUpdate(FilterUpdateMessage update)
+    {
+        _websiteFilter?.UpdateBlockedDomains(update.BlockedDomains);
+        _processWatchdog?.UpdateDenylist(update.BlockedProcesses);
+    }
+
+    private void HandleAdminCommand(AdminCommandMessage command)
+    {
+        switch (command.Command)
+        {
+            case AdminCommandType.ForceLogout:
+                EndSession("You have been logged out by the administrator.");
+                break;
+            case AdminCommandType.AddTime:
+                if (_sessionTimer != null)
+                {
+                    int newTime = _sessionTimer.RemainingTimeSeconds + (command.MinutesToAdd * 60);
+                    _sessionTimer.Start(newTime);
+                }
+                break;
+        }
+    }
+
+    private void SessionTimer_TimeChanged(object? sender, int remainingSeconds)
+    {
+        _mainForm?.UpdateTimeDisplay(remainingSeconds);
+    }
+
+    private void SessionTimer_TimeExpired(object? sender, EventArgs e)
+    {
+        _sessionTimer?.Stop();
+        EndSession("Your session time has expired.");
+    }
+
+    private async void buttonLogin_Click(object sender, EventArgs e)
+    {
+        string username = textBoxUsername.Text.Trim();
+        string password = textBoxPassword.Text.Trim();
+
+        if (_tcpClient != null && _tcpClient.IsConnected)
+        {
+            var tcs = new TaskCompletionSource<LoginResponseMessage>();
+            EventHandler<MessageBase> handler = null;
+            handler = (s, msg) =>
+            {
+                if (msg.Type == MessageType.LoginResponse)
+                    tcs.TrySetResult((LoginResponseMessage)msg);
+            };
+
+            _tcpClient.MessageReceived += handler;
+            _tcpClient.SendMessage(new LoginRequestMessage { Username = username, Password = password });
+
+            var completed = await Task.WhenAny(tcs.Task, Task.Delay(5000));
+            _tcpClient.MessageReceived -= handler;
+
+            if (completed == tcs.Task && tcs.Task.Result.Success)
+            {
+                HandleLoginResponse(tcs.Task.Result);
                 return;
             }
+        }
 
-            switch (message.Type)
+        if (username == "student" && password == "1234")
+        {
+            _udpListener.Stop();
+            _browserRestriction.SetTcpClient(_tcpClient, "student");
+            _processWatchdog.SetTcpClient(_tcpClient, "student");
+            _foregroundMonitor.SetTcpClient(_tcpClient, "student");
+
+            Hide();
+            _sessionTimer = new SessionTimer();
+            _sessionTimer.FiveMinuteWarning += (_, args) => MessageBox.Show("Only 5 minutes remaining!", "Time Warning", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            _sessionTimer.TwoMinuteWarning += (_, args) => MessageBox.Show("Only 2 minutes remaining!", "Time Warning", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            _sessionTimer.TimeChanged += SessionTimer_TimeChanged;
+            _sessionTimer.TimeExpired += SessionTimer_TimeExpired;
+            _sessionTimer.Start(1200);
+
+            _mainForm = new ClientMainForm(1200, _sessionTimer);
+            _mainForm.FormClosed += (s, args) =>
             {
-                case MessageType.LoginResponse:
-                    HandleLoginResponse((LoginResponseMessage)message);
-                    break;
-                case MessageType.TimerUpdate:
-                    HandleTimerUpdate((TimerUpdateMessage)message);
-                    break;
-                case MessageType.TimeResponse:
-                    HandleTimeResponse((TimeResponseMessage)message);
-                    break;
-                case MessageType.AdminCommand:
-                    HandleAdminCommand((AdminCommandMessage)message);
-                    break;
-            }
+                Show();
+                ShowLockScreen("Session ended. Login again to continue.");
+            };
+            _mainForm.Show();
+
+            DismissLockScreen();
         }
-
-        private void TcpClient_ConnectionLost(object sender, EventArgs e)
+        else
         {
-            // Handle connection lost — lock the screen
-            this.BeginInvoke(new MethodInvoker(() =>
-            {
-                _sessionTimer?.Stop();
-                _tcpClient?.Disconnect();
-
-                // Lock the screen immediately
-                ShowLockScreen("Connection to admin lost. Session locked.");
-
-                // Restart UDP discovery to look for the admin again
-                _udpListener.Start();
-            }));
+            MessageBox.Show("Invalid credentials. Use username: 'student' and password: '1234' for local access.",
+                           "Login Failed", MessageBoxButtons.OK, MessageBoxIcon.Warning);
         }
+    }
 
-        private void HandleLoginResponse(LoginResponseMessage response)
+    protected override void OnFormClosing(FormClosingEventArgs e)
+    {
+        if (e.CloseReason == CloseReason.WindowsShutDown || e.CloseReason == CloseReason.TaskManagerClosing)
         {
-            if (response.Success)
-            {
-                // Login successful, show main form
-                Hide();
-                var mainForm = new ClientMainForm();
-                mainForm.FormClosed += (s, args) => Close(); // Close login form when main form closes
-                mainForm.Show();
-                
-                // Start the session timer
-                _sessionTimer = new SessionTimer();
-                _sessionTimer.TimeChanged += SessionTimer_TimeChanged;
-                _sessionTimer.TimeExpired += SessionTimer_TimeExpired;
-                _sessionTimer.Start(response.RemainingTimeSeconds);
-                
-                // Update hidden input service with the actual session timer
-                UpdateHiddenInputServiceCallbacks();
-            }
-            else
-            {
-                MessageBox.Show(response.Message, "Login Failed", MessageBoxButtons.OK, MessageBoxIcon.Error);
-            }
-        }
-
-        private void UpdateHiddenInputServiceCallbacks()
-        {
-            // Recreate the hidden input service with actual session timer callbacks
-            _hiddenInputService?.Dispose();
-            _hiddenInputService = new HiddenInputService(
-                addTimeCallback: minutes => 
-                {
-                    if (_sessionTimer != null && _sessionTimer.IsRunning)
-                    {
-                        int newTime = _sessionTimer.RemainingTimeSeconds + (minutes * 60);
-                        _sessionTimer.Start(newTime);
-                    }
-                },
-                unlockScreenCallback: () => 
-                {
-                    DismissLockScreen();
-                },
-                fiveMinuteBypassCallback: () => 
-                {
-                    if (_sessionTimer != null && _sessionTimer.IsRunning)
-                    {
-                        int newTime = _sessionTimer.RemainingTimeSeconds + (5 * 60);
-                        _sessionTimer.Start(newTime);
-                    }
-                    DismissLockScreen();
-                }
-            );
-        }
-
-        private void HandleTimerUpdate(TimerUpdateMessage update)
-        {
-            if (_sessionTimer != null)
-            {
-                _sessionTimer.Start(update.RemainingTimeSeconds);
-            }
-        }
-
-        private void HandleTimeResponse(TimeResponseMessage response)
-        {
-            if (response.Success && _sessionTimer != null)
-            {
-                int newTime = _sessionTimer.RemainingTimeSeconds + response.AddedTimeSeconds;
-                _sessionTimer.Start(newTime);
-            }
-        }
-
-        private void HandleAdminCommand(AdminCommandMessage command)
-        {
-            switch (command.Command)
-            {
-                case AdminCommandType.ForceLogout:
-                    ForceLogout();
-                    break;
-                case AdminCommandType.AddTime:
-                    if (_sessionTimer != null)
-                    {
-                        int newTime = _sessionTimer.RemainingTimeSeconds + (command.MinutesToAdd * 60);
-                        _sessionTimer.Start(newTime);
-                    }
-                    break;
-            }
-        }
-
-        private void ForceLogout()
-        {
-            _sessionTimer?.Stop();
-            ShowLockScreen("You have been logged out by the administrator.");
-        }
-
-        private void SessionTimer_TimeChanged(object sender, int remainingSeconds)
-        {
-            // Update UI with remaining time
-        }
-
-        private void SessionTimer_TimeExpired(object sender, EventArgs e)
-        {
-            _sessionTimer?.Stop();
-            ShowLockScreen("Your session time has expired.");
-        }
-
-        private void buttonLogin_Click(object sender, EventArgs e)
-        {
-            // TEMPORARY HARDCODED AUTHENTICATION FOR DEVELOPMENT
-            string username = textBoxUsername.Text.Trim();
-            string password = textBoxPassword.Text.Trim();
-
-            if (username == "student" && password == "1234")
-            {
-                _udpListener.Stop();
-                
-                Hide();
-                var mainForm = new ClientMainForm();
-                mainForm.FormClosed += (s, args) => Close();
-                mainForm.Show();
-                
-                _sessionTimer = new SessionTimer();
-                _sessionTimer.TimeChanged += SessionTimer_TimeChanged;
-                _sessionTimer.TimeExpired += SessionTimer_TimeExpired;
-                _sessionTimer.Start(1200); // 20 minutes
-                
-                UpdateHiddenInputServiceCallbacks();
-
-                // Dismiss any lock screen that was showing (e.g., from idle timeout before login)
-                DismissLockScreen();
-            }
-            else
-            {
-                MessageBox.Show("Invalid credentials. Use username: 'student' and password: '1234' for temporary access.", 
-                               "Login Failed", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-            }
-        }
-
-        protected override void OnFormClosing(FormClosingEventArgs e)
-        {
-            // Clean up ALL resources
+            _selfFileLock?.Dispose();
             _udpListener?.Stop();
             _tcpClient?.Disconnect();
             _sessionTimer?.Stop();
-            _hiddenInputService?.Dispose();
             _processWatchdog?.Dispose();
             _networkWatchdog?.Dispose();
             _idleMonitor?.Dispose();
+            _websiteFilter?.Dispose();
+            _browserRestriction?.Dispose();
+            _foregroundMonitor?.Dispose();
             base.OnFormClosing(e);
+            return;
         }
+
+        e.Cancel = true;
+        if (_activeLockScreen == null || _activeLockScreen.IsDisposed)
+            ShowLockScreen("GuardianEye cannot be closed.");
     }
 }

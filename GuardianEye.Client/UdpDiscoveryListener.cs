@@ -1,68 +1,52 @@
-using System;
 using System.Net;
 using System.Net.Sockets;
 using System.Text;
-using System.Threading;
 using GuardianEye.Shared;
 
-namespace GuardianEye.Client
+namespace GuardianEye.Client;
+
+public class UdpDiscoveryListener
 {
-    public class UdpDiscoveryListener
+    private UdpClient _udpClient;
+    private CancellationTokenSource _cts;
+    public event EventHandler<string> AdminDiscovered;
+
+    public UdpDiscoveryListener(int port = Constants.UdpBroadcastPort)
     {
-        private UdpClient _udpClient;
-        private Thread _listenThread;
-        private bool _isListening;
-        public event EventHandler<string> AdminDiscovered; // IP address of admin
+    }
 
-        public UdpDiscoveryListener(int port = Constants.UdpBroadcastPort)
-        {
-            _udpClient = new UdpClient(port);
-            _udpClient.EnableBroadcast = true;
-        }
+    public void Start()
+    {
+        Stop();
+        _cts = new CancellationTokenSource();
+        _udpClient = new UdpClient(Constants.UdpBroadcastPort);
+        _udpClient.EnableBroadcast = true;
+        _ = ListenAsync(_cts.Token);
+    }
 
-        public void Start()
-        {
-            if (_isListening) return;
-            _isListening = true;
-            _listenThread = new Thread(Listen);
-            _listenThread.IsBackground = true;
-            _listenThread.Start();
-        }
+    public void Stop()
+    {
+        _cts?.Cancel();
+        _udpClient?.Close();
+        _udpClient = null;
+    }
 
-        public void Stop()
+    private async Task ListenAsync(CancellationToken ct)
+    {
+        try
         {
-            _isListening = false;
-            _udpClient.Close();
-            if (_listenThread != null && _listenThread.IsAlive)
+            while (!ct.IsCancellationRequested)
             {
-                _listenThread.Join();
-            }
-        }
-
-        private void Listen()
-        {
-            IPEndPoint remoteEndPoint = new IPEndPoint(IPAddress.Any, 0);
-            try
-            {
-                while (_isListening)
+                var result = await _udpClient.ReceiveAsync(ct).ConfigureAwait(false);
+                string message = Encoding.UTF8.GetString(result.Buffer);
+                if (message == "GuardianEyeAdmin")
                 {
-                    byte[] data = _udpClient.Receive(ref remoteEndPoint);
-                    string message = Encoding.UTF8.GetString(data);
-                    // We expect a simple beacon message, e.g., "GuardianEyeAdmin"
-                    if (!string.IsNullOrEmpty(message) && message == "GuardianEyeAdmin")
-                    {
-                        AdminDiscovered?.Invoke(this, remoteEndPoint.Address.ToString());
-                    }
+                    AdminDiscovered?.Invoke(this, result.RemoteEndPoint.Address.ToString());
                 }
             }
-            catch (SocketException)
-            {
-                // Ignore if stopped
-            }
-            catch (ObjectDisposedException)
-            {
-                // Ignore if stopped
-            }
         }
+        catch (ObjectDisposedException) { }
+        catch (OperationCanceledException) { }
+        catch (SocketException) { }
     }
 }

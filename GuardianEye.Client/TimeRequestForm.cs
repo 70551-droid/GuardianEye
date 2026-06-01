@@ -5,10 +5,16 @@ namespace GuardianEye.Client
 {
     public partial class TimeRequestForm : Form
     {
-        public TimeRequestForm()
+    public TimeRequestForm()
+    {
+        InitializeComponent();
+        Load += (_, _) =>
         {
-            InitializeComponent();
-        }
+            if (Environment.OSVersion.Version.Build >= 22000)
+                UIStyles.EnableMica(Handle);
+            UIStyles.EnableRoundedCorners(Handle);
+        };
+    }
 
         public int RequestedMinutes => (int)numericUpDownMinutes.Value;
         public string Reason => textBoxReason.Text;

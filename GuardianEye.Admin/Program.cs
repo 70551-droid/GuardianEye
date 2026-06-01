@@ -2,15 +2,21 @@ namespace GuardianEye.Admin;
 
 static class Program
 {
-    /// <summary>
-    ///  The main entry point for the application.
-    /// </summary>
     [STAThread]
     static void Main()
     {
-        // To customize application configuration such as set high DPI settings or default font,
-        // see https://aka.ms/applicationconfiguration.
         ApplicationConfiguration.Initialize();
-        Application.Run(new Form1());
-    }    
+
+        var database = new DatabaseService();
+        var login = new LoginForm(database);
+
+        if (login.ShowDialog() == DialogResult.OK)
+        {
+            var sessionManager = new SessionManager();
+            var tcpServer = new TcpServer(sessionManager, database);
+            var udpBroadcaster = new UdpBroadcaster();
+            var dashboard = new DashboardForm(tcpServer, udpBroadcaster, sessionManager, database);
+            Application.Run(dashboard);
+        }
+    }
 }

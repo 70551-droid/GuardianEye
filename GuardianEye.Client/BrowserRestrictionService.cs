@@ -3,51 +3,26 @@ using GuardianEye.Shared;
 
 namespace GuardianEye.Client;
 
-public class ProcessWatchdog : IDisposable
+public class BrowserRestrictionService : IDisposable
 {
     private CancellationTokenSource _cts;
     private Task _watchTask;
     private bool _isDisposed;
     private TcpCommunication _tcpClient;
-    private string _username = "";
+    private string _username;
 
-    private static readonly string[] DefaultForbidden = new[]
+    private static readonly string[] KnownBrowsers = new[]
     {
-        "Taskmgr", "cmd", "powershell", "pwsh", "ProcessHacker",
-        "procexp", "procexp64", "taskkill", "wmic", "msconfig", "regedit", "mmc",
+        "firefox", "msedge", "iexplore", "opera", "brave",
+        "vivaldi", "tor", "whale", "safari", "seamonkey",
+        "maxthon", "waterfox", "palemoon", "epiphany", "midori",
+        "netscape", "k-meleon", "otter", "falkon", "qutebrowser"
     };
 
-    private List<string> _extraForbidden = new();
-
-    private string[] ForbiddenProcesses
+    public void SetTcpClient(TcpCommunication tcpClient, string username)
     {
-        get
-        {
-            lock (_extraForbidden)
-            {
-                if (_extraForbidden.Count == 0)
-                    return DefaultForbidden;
-                return DefaultForbidden.Concat(_extraForbidden).Distinct(StringComparer.OrdinalIgnoreCase).ToArray();
-            }
-        }
-    }
-
-    public void SetTcpClient(TcpCommunication client, string username)
-    {
-        _tcpClient = client;
+        _tcpClient = tcpClient;
         _username = username;
-    }
-
-    public void UpdateDenylist(List<string> extraProcesses)
-    {
-        lock (_extraForbidden)
-        {
-            _extraForbidden = extraProcesses?
-                .Select(p => p.Trim())
-                .Where(p => !string.IsNullOrEmpty(p))
-                .Distinct(StringComparer.OrdinalIgnoreCase)
-                .ToList() ?? new List<string>();
-        }
     }
 
     public void Start()
@@ -67,17 +42,16 @@ public class ProcessWatchdog : IDisposable
     {
         while (!ct.IsCancellationRequested)
         {
-            try { KillForbiddenProcesses(); }
+            try { KillNonChromeBrowsers(); }
             catch { }
-            try { await Task.Delay(500, ct).ConfigureAwait(false); }
+            try { await Task.Delay(1000, ct).ConfigureAwait(false); }
             catch (OperationCanceledException) { break; }
         }
     }
 
-    private void KillForbiddenProcesses()
+    private void KillNonChromeBrowsers()
     {
-        string[] targets = ForbiddenProcesses;
-        foreach (string name in targets)
+        foreach (string name in KnownBrowsers)
         {
             try
             {
@@ -87,7 +61,7 @@ public class ProcessWatchdog : IDisposable
                     {
                         proc.Kill();
                         proc.WaitForExit(500);
-                        ReportBlocked(name);
+                        ReportBlocked(AttemptType.Browser, name);
                     }
                     catch { }
                     finally { proc.Dispose(); }
@@ -97,13 +71,13 @@ public class ProcessWatchdog : IDisposable
         }
     }
 
-    private void ReportBlocked(string target)
+    private void ReportBlocked(AttemptType type, string target)
     {
         if (_tcpClient?.IsConnected == true)
         {
             _tcpClient.SendMessage(new BlockedAttemptMessage
             {
-                AttemptType = AttemptType.Process,
+                AttemptType = type,
                 TargetName = target,
                 Timestamp = DateTime.UtcNow,
                 Username = _username

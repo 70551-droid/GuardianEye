@@ -2,15 +2,12 @@ namespace GuardianEye.Client;
 
 partial class TimeRequestForm
 {
-    /// <summary>
-    ///  Required designer variable.
-    /// </>
     private System.ComponentModel.IContainer components = null;
+    private Guna.UI2.WinForms.Guna2NumericUpDown numericUpDownMinutes;
+    private Guna.UI2.WinForms.Guna2TextBox textBoxReason;
+    private Guna.UI2.WinForms.Guna2Button buttonOK;
+    private Guna.UI2.WinForms.Guna2Button buttonCancel;
 
-    /// <summary>
-    ///  Clean up any resources being used.
-    /// </param>
-    /// <param name="disposing">true if managed resources should be disposed; otherwise, false.</param>
     protected override void Dispose(bool disposing)
     {
         if (disposing && (components != null))
@@ -20,110 +17,77 @@ partial class TimeRequestForm
         base.Dispose(disposing);
     }
 
-    #region Windows Form Designer generated code
-
-    /// <summary>
-    ///  Required method for Designer support - do not modify
-    ///  the contents of this method with the code editor.
-    /// </summary>
     private void InitializeComponent()
     {
-        this.labelMinutes = new System.Windows.Forms.Label();
-        this.numericUpDownMinutes = new System.Windows.Forms.NumericUpDown();
-        this.labelReason = new System.Windows.Forms.Label();
-        this.textBoxReason = new System.Windows.Forms.TextBox();
-        this.buttonOK = new System.Windows.Forms.Button();
-        this.buttonCancel = new System.Windows.Forms.Button();
-        ((System.ComponentModel.ISupportInitialize)(this.numericUpDownMinutes)).BeginInit();
-        this.SuspendLayout();
-        // 
-        // labelMinutes
-        // 
-        this.labelMinutes.AutoSize = true;
-        this.labelMinutes.Location = new System.Drawing.Point(12, 15);
-        this.labelMinutes.Name = "labelMinutes";
-        this.labelMinutes.Size = new System.Drawing.Size(47, 15);
-        this.labelMinutes.TabIndex = 0;
-        this.labelMinutes.Text = "Minutes:";
-        // 
-        // numericUpDownMinutes
-        // 
-        this.numericUpDownMinutes.Location = new System.Drawing.Point(78, 13);
-        this.numericUpDownMinutes.Maximum = new decimal(new int[] {
-        60,
-        0,
-        0,
-        0});
-        this.numericUpDownMinutes.Name = "numericUpDownMinutes";
-        this.numericUpDownMinutes.Size = new System.Drawing.Size(120, 23);
-        this.numericUpDownMinutes.TabIndex = 1;
-        // 
-        // labelReason
-        // 
-        this.labelReason.AutoSize = true;
-        this.labelReason.Location = new System.Drawing.Point(12, 44);
-        this.labelReason.Name = "labelReason";
-        this.labelReason.Size = new System.Drawing.Size(45, 15);
-        this.labelReason.TabIndex = 2;
-        this.labelReason.Text = "Reason:";
-        // 
-        // textBoxReason
-        // 
-        this.textBoxReason.Location = new System.Drawing.Point(78, 42);
-        this.textBoxReason.Name = "textBoxReason";
-        this.textBoxReason.Size = new System.Drawing.Size(200, 23);
-        this.textBoxReason.TabIndex = 3;
-        // 
-        // buttonOK
-        // 
-        this.buttonOK.Location = new System.Drawing.Point(78, 71);
-        this.buttonOK.Name = "buttonOK";
-        this.buttonOK.Size = new System.Drawing.Size(75, 23);
-        this.buttonOK.TabIndex = 4;
-        this.buttonOK.Text = "OK";
-        this.buttonOK.UseVisualStyleBackColor = true;
-        this.buttonOK.Click += new System.EventHandler(this.buttonOK_Click);
-        // 
-        // buttonCancel
-        // 
-        this.buttonCancel.Location = new System.Drawing.Point(159, 71);
-        this.buttonCancel.Name = "buttonCancel";
-        this.buttonCancel.Size = new System.Drawing.Size(75, 23);
-        this.buttonCancel.TabIndex = 5;
-        this.buttonCancel.Text = "Cancel";
-        this.buttonCancel.UseVisualStyleBackColor = true;
-        this.buttonCancel.Click += new System.EventHandler(this.buttonCancel_Click);
-        // 
-        // TimeRequestForm
-        // 
-        this.AcceptButton = this.buttonOK;
-        this.AutoScaleDimensions = new System.Drawing.SizeF(7F, 15F);
-        this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-        this.CancelButton = this.buttonCancel;
-        this.ClientSize = new System.Drawing.Size(292, 106);
-        this.Controls.Add(this.buttonCancel);
-        this.Controls.Add(this.buttonOK);
-        this.Controls.Add(this.textBoxReason);
-        this.Controls.Add(this.labelReason);
-        this.Controls.Add(this.numericUpDownMinutes);
-        this.Controls.Add(this.labelMinutes);
-        this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedDialog;
-        this.MaximizeBox = false;
-        this.MinimizeBox = false;
-        this.Name = "TimeRequestForm";
-        this.StartPosition = System.Windows.Forms.FormStartPosition.CenterParent;
-        this.Text = "Request More Time";
-        ((System.ComponentModel.ISupportInitialize)(this.numericUpDownMinutes)).EndInit();
-        this.ResumeLayout(false);
-        this.PerformLayout();
+        numericUpDownMinutes = new Guna.UI2.WinForms.Guna2NumericUpDown();
+        textBoxReason = new Guna.UI2.WinForms.Guna2TextBox();
+        buttonOK = new Guna.UI2.WinForms.Guna2Button();
+        buttonCancel = new Guna.UI2.WinForms.Guna2Button();
+        ((System.ComponentModel.ISupportInitialize)numericUpDownMinutes).BeginInit();
+        SuspendLayout();
+
+        var labelMinutes = new Label();
+        labelMinutes.AutoSize = true;
+        labelMinutes.ForeColor = UIStyles.TextPrimary;
+        labelMinutes.BackColor = Color.Transparent;
+        labelMinutes.Location = new Point(16, 16);
+        labelMinutes.Size = new Size(54, 15);
+        labelMinutes.Text = "Minutes:";
+
+        numericUpDownMinutes.FillColor = Color.FromArgb(40, 255, 255, 255);
+        numericUpDownMinutes.BorderColor = Color.FromArgb(50, 255, 255, 255);
+        numericUpDownMinutes.BorderRadius = 8;
+        numericUpDownMinutes.ForeColor = UIStyles.TextPrimary;
+        numericUpDownMinutes.BackColor = Color.Transparent;
+        numericUpDownMinutes.Location = new Point(80, 14);
+        numericUpDownMinutes.Maximum = new decimal(new int[] { 60, 0, 0, 0 });
+        numericUpDownMinutes.Size = new Size(120, 24);
+
+        var labelReason = new Label();
+        labelReason.AutoSize = true;
+        labelReason.ForeColor = UIStyles.TextPrimary;
+        labelReason.BackColor = Color.Transparent;
+        labelReason.Location = new Point(16, 48);
+        labelReason.Size = new Size(48, 15);
+        labelReason.Text = "Reason:";
+
+        textBoxReason.FillColor = Color.FromArgb(40, 255, 255, 255);
+        textBoxReason.BorderColor = Color.FromArgb(50, 255, 255, 255);
+        textBoxReason.FocusedState.BorderColor = UIStyles.AccentBlue;
+        textBoxReason.BorderRadius = 8;
+        textBoxReason.ForeColor = UIStyles.TextPrimary;
+        textBoxReason.PlaceholderForeColor = UIStyles.TextMuted;
+        textBoxReason.PlaceholderText = "Why do you need more time?";
+        textBoxReason.Location = new Point(80, 46);
+        textBoxReason.Size = new Size(200, 24);
+
+        buttonOK.Size = new Size(90, 34);
+        buttonOK.Location = new Point(80, 82);
+        buttonOK.Text = "Send Request";
+        UIStyles.StyleGunaButton(buttonOK, UIStyles.AccentBlue);
+        buttonOK.Click += buttonOK_Click;
+
+        buttonCancel.Size = new Size(90, 34);
+        buttonCancel.Location = new Point(178, 82);
+        buttonCancel.Text = "Cancel";
+        UIStyles.StyleGunaButton(buttonCancel, Color.FromArgb(80, 80, 100));
+        buttonCancel.Click += buttonCancel_Click;
+
+        AutoScaleDimensions = new SizeF(7F, 15F);
+        AutoScaleMode = AutoScaleMode.Font;
+        BackColor = UIStyles.DeepBg;
+        ClientSize = new Size(292, 130);
+        Controls.AddRange(new Control[] {
+            labelMinutes, numericUpDownMinutes,
+            labelReason, textBoxReason,
+            buttonOK, buttonCancel
+        });
+        FormBorderStyle = FormBorderStyle.None;
+        Name = "TimeRequestForm";
+        StartPosition = FormStartPosition.CenterParent;
+        Text = "Request More Time";
+        ((System.ComponentModel.ISupportInitialize)numericUpDownMinutes).EndInit();
+        ResumeLayout(false);
+        PerformLayout();
     }
-
-    #endregion
-
-    private System.Windows.Forms.Label labelMinutes;
-    private System.Windows.Forms.NumericUpDown numericUpDownMinutes;
-    private System.Windows.Forms.Label labelReason;
-    private System.Windows.Forms.TextBox textBoxReason;
-    private System.Windows.Forms.Button buttonOK;
-    private System.Windows.Forms.Button buttonCancel;
 }

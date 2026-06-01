@@ -1,23 +1,19 @@
 using System;
 using System.Collections.Generic;
 using System.Drawing;
+using System.Drawing.Drawing2D;
 using System.Runtime.InteropServices;
 using System.Windows.Forms;
 
 namespace GuardianEye.Client
 {
-    /// <summary>
-    /// A hardened, full-screen lock screen that covers ALL monitors.
-    /// Blocks keyboard shortcuts, traps the mouse, and cannot be closed by the student.
-    /// Only the HiddenInputService unlock callback or an admin command can dismiss it.
-    /// </summary>
     public partial class LockScreenForm : Form
     {
         [DllImport("user32.dll")]
         private static extern bool ClipCursor(ref RECT lpRect);
 
         [DllImport("user32.dll")]
-        private static extern bool ClipCursor(IntPtr lpRect); // Pass null to release
+        private static extern bool ClipCursor(IntPtr lpRect);
 
         [StructLayout(LayoutKind.Sequential)]
         private struct RECT
@@ -37,26 +33,21 @@ namespace GuardianEye.Client
 
         private void SetupLockScreen()
         {
-            // Make this form an inescapable full-screen overlay on the primary monitor
             this.FormBorderStyle = FormBorderStyle.None;
             this.WindowState = FormWindowState.Maximized;
             this.TopMost = true;
             this.ShowInTaskbar = false;
-            this.BackColor = Color.FromArgb(15, 15, 15);
             this.StartPosition = FormStartPosition.Manual;
 
-            // Cover the primary screen
             Screen primary = Screen.PrimaryScreen;
             this.Bounds = primary.Bounds;
 
-            // Center the message label
             labelMessage.AutoSize = false;
             labelMessage.TextAlign = ContentAlignment.MiddleCenter;
             labelMessage.Dock = DockStyle.Fill;
             labelMessage.Font = new Font("Segoe UI", 28F, FontStyle.Bold);
             labelMessage.ForeColor = Color.FromArgb(220, 50, 50);
 
-            // Set up keyboard hook in lockdown mode
             _lockKeyboardHook = new GlobalKeyboardHook();
             _lockKeyboardHook.IsLockdownActive = true;
             _lockKeyboardHook.Hook();
@@ -67,14 +58,54 @@ namespace GuardianEye.Client
             labelMessage.Text = message;
         }
 
+        protected override void OnPaintBackground(PaintEventArgs e)
+        {
+            using var brush = new LinearGradientBrush(
+                ClientRectangle,
+                Color.FromArgb(10, 8, 20),
+                Color.FromArgb(20, 16, 36),
+                LinearGradientMode.Vertical);
+            e.Graphics.FillRectangle(brush, ClientRectangle);
+
+            for (int y = 0; y < ClientRectangle.Height; y += 4)
+            {
+                using var scanPen = new Pen(Color.FromArgb(6, 255, 255, 255));
+                e.Graphics.DrawLine(scanPen, 0, y, ClientRectangle.Width, y);
+            }
+        }
+
+        protected override void OnPaint(PaintEventArgs e)
+        {
+            base.OnPaint(e);
+            e.Graphics.SmoothingMode = SmoothingMode.AntiAlias;
+
+            string text = labelMessage.Text;
+            if (string.IsNullOrEmpty(text)) return;
+
+            var font = labelMessage.Font;
+            var textRect = new Rectangle(40, ClientRectangle.Height / 2 - 60, ClientRectangle.Width - 80, 120);
+
+            using var glowBrush = new SolidBrush(Color.FromArgb(40, 255, 50, 50));
+            var glowRect = textRect;
+            glowRect.Offset(2, 2);
+            using (var fmt = new StringFormat { Alignment = StringAlignment.Center, LineAlignment = StringAlignment.Center })
+            {
+                e.Graphics.DrawString(text, font, glowBrush, glowRect, fmt);
+                glowRect.Offset(-4, -4);
+                e.Graphics.DrawString(text, font, glowBrush, glowRect, fmt);
+                glowRect.Offset(2, 2);
+                using var textBrush = new SolidBrush(Color.FromArgb(255, 80, 80));
+                e.Graphics.DrawString(text, font, textBrush, textRect, fmt);
+            }
+        }
+
         protected override void OnShown(EventArgs e)
         {
             base.OnShown(e);
 
-            // Cover ALL secondary monitors with black overlay forms
             foreach (Screen screen in Screen.AllScreens)
             {
-                if (screen.Primary) continue; // Primary is already covered by this form
+                if (screen.Primary) continue;
 
                 var overlay = new Form
                 {
@@ -87,7 +118,6 @@ namespace GuardianEye.Client
                     Bounds = screen.Bounds
                 };
 
-                // Add a matching message label
                 var lbl = new Label
                 {
                     Text = labelMessage.Text,
@@ -103,10 +133,7 @@ namespace GuardianEye.Client
                 _secondaryOverlays.Add(overlay);
             }
 
-            // Trap the mouse cursor inside the primary screen
             TrapMouse();
-
-            // Force focus so student can't click behind
             this.BringToFront();
             this.Activate();
             this.Focus();
@@ -130,16 +157,11 @@ namespace GuardianEye.Client
             ClipCursor(IntPtr.Zero);
         }
 
-        /// <summary>
-        /// The ONLY way to close this lock screen. Must be called by the admin 
-        /// unlock command or the HiddenInputService.
-        /// </summary>
         public void UnlockAndClose()
         {
             _allowClose = true;
             ReleaseMouse();
 
-            // Close secondary overlays
             foreach (var overlay in _secondaryOverlays)
             {
                 if (overlay != null && !overlay.IsDisposed)
@@ -150,7 +172,6 @@ namespace GuardianEye.Client
             }
             _secondaryOverlays.Clear();
 
-            // Unhook keyboard
             _lockKeyboardHook?.Dispose();
             _lockKeyboardHook = null;
 
@@ -159,7 +180,6 @@ namespace GuardianEye.Client
 
         protected override void OnFormClosing(FormClosingEventArgs e)
         {
-            // Block ALL close attempts unless we explicitly allowed it
             if (!_allowClose)
             {
                 e.Cancel = true;
@@ -171,21 +191,16 @@ namespace GuardianEye.Client
             base.OnFormClosing(e);
         }
 
-        // Prevent Alt+F4 from even reaching the form
         protected override bool ProcessCmdKey(ref Message msg, Keys keyData)
         {
-            // Block Alt+F4
             if (keyData == (Keys.Alt | Keys.F4))
-                return true; // Swallow it
-
+                return true;
             return base.ProcessCmdKey(ref msg, keyData);
         }
 
-        // Prevent the form from being deactivated (clicked behind)
         protected override void OnDeactivate(EventArgs e)
         {
             base.OnDeactivate(e);
-            // Immediately reclaim focus
             if (!_allowClose && !this.IsDisposed)
             {
                 this.BringToFront();

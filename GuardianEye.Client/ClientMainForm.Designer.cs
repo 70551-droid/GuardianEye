@@ -2,15 +2,11 @@ namespace GuardianEye.Client;
 
 partial class ClientMainForm
 {
-    /// <summary>
-    ///  Required designer variable.
-    /// </summary>
     private System.ComponentModel.IContainer components = null;
+    internal Label labelTime;
+    private Guna.UI2.WinForms.Guna2Button buttonLogout;
+    private Guna.UI2.WinForms.Guna2Button buttonRequestTime;
 
-    /// <summary>
-    ///  Clean up any resources being used.
-    /// </summary>
-    /// <param name="disposing">true if managed resources should be disposed; otherwise, false.</param>
     protected override void Dispose(bool disposing)
     {
         if (disposing && (components != null))
@@ -20,69 +16,53 @@ partial class ClientMainForm
         base.Dispose(disposing);
     }
 
-    #region Windows Form Designer generated code
-
-    /// <summary>
-    ///  Required method for Designer support - do not modify
-    ///  the contents of this method with the code editor.
-    /// </summary>
     private void InitializeComponent()
     {
-        this.labelTime = new System.Windows.Forms.Label();
-        this.buttonLogout = new System.Windows.Forms.Button();
-        this.buttonRequestTime = new System.Windows.Forms.Button();
-        this.SuspendLayout();
-        // 
-        // labelTime
-        // 
-        this.labelTime.AutoSize = true;
-        this.labelTime.Font = new System.Drawing.Font("Segoe UI", 24F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point);
-        this.labelTime.Location = new System.Drawing.Point(12, 9);
-        this.labelTime.Name = "labelTime";
-        this.labelTime.Size = new System.Drawing.Size(102, 45);
-        this.labelTime.TabIndex = 0;
-        this.labelTime.Text = "20:00";
-        // 
-        // buttonLogout
-        // 
-        this.buttonLogout.Location = new System.Drawing.Point(12, 70);
-        this.buttonLogout.Name = "buttonLogout";
-        this.buttonLogout.Size = new System.Drawing.Size(100, 30);
-        this.buttonLogout.TabIndex = 1;
-        this.buttonLogout.Text = "Logout";
-        this.buttonLogout.UseVisualStyleBackColor = true;
-        this.buttonLogout.Click += new System.EventHandler(this.buttonLogout_Click);
-        // 
-        // buttonRequestTime
-        // 
-        this.buttonRequestTime.Location = new System.Drawing.Point(118, 70);
-        this.buttonRequestTime.Name = "buttonRequestTime";
-        this.buttonRequestTime.Size = new System.Drawing.Size(100, 30);
-        this.buttonRequestTime.TabIndex = 2;
-        this.buttonRequestTime.Text = "Request Time";
-        this.buttonRequestTime.UseVisualStyleBackColor = true;
-        this.buttonRequestTime.Click += new System.EventHandler(this.buttonRequestTime_Click);
-        // 
-        // ClientMainForm
-        // 
-        this.AutoScaleDimensions = new System.Drawing.SizeF(7F, 15F);
-        this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-        this.ClientSize = new System.Drawing.Size(234, 112);
-        this.Controls.Add(this.buttonRequestTime);
-        this.Controls.Add(this.buttonLogout);
-        this.Controls.Add(this.labelTime);
-        this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedDialog;
-        this.MaximizeBox = false;
-        this.Name = "ClientMainForm";
-        this.StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen;
-        this.Text = "GuardianEye - Session";
-        this.ResumeLayout(false);
-        this.PerformLayout();
+        labelTime = new Label();
+        buttonLogout = new Guna.UI2.WinForms.Guna2Button();
+        buttonRequestTime = new Guna.UI2.WinForms.Guna2Button();
+        SuspendLayout();
+
+        labelTime.AutoSize = false;
+        labelTime.Size = new Size(200, 80);
+        labelTime.Location = new Point(0, 24);
+        labelTime.Text = "20:00";
+        labelTime.Font = new Font("Segoe UI", 56F, FontStyle.Bold);
+        labelTime.ForeColor = UIStyles.TextPrimary;
+        labelTime.TextAlign = ContentAlignment.MiddleCenter;
+        labelTime.BackColor = Color.Transparent;
+        labelTime.Anchor = AnchorStyles.None;
+
+        var labelRemaining = new Label();
+        labelRemaining.AutoSize = false;
+        labelRemaining.Size = new Size(200, 20);
+        labelRemaining.Location = new Point(0, 104);
+        labelRemaining.Text = "remaining";
+        labelRemaining.Font = new Font("Segoe UI", 10F);
+        labelRemaining.ForeColor = UIStyles.TextMuted;
+        labelRemaining.TextAlign = ContentAlignment.MiddleCenter;
+        labelRemaining.BackColor = Color.Transparent;
+        labelRemaining.Anchor = AnchorStyles.None;
+
+        buttonLogout.Size = new Size(120, 38);
+        buttonLogout.Location = new Point(16, 148);
+        buttonLogout.Text = "Logout";
+        UIStyles.StyleGunaButton(buttonLogout, UIStyles.AccentRed);
+
+        buttonRequestTime.Size = new Size(120, 38);
+        buttonRequestTime.Location = new Point(144, 148);
+        buttonRequestTime.Text = "Request Time";
+        UIStyles.StyleGunaButton(buttonRequestTime, UIStyles.AccentBlue);
+
+        AutoScaleDimensions = new SizeF(7F, 15F);
+        AutoScaleMode = AutoScaleMode.Font;
+        BackColor = UIStyles.DeepBg;
+        ClientSize = new Size(280, 200);
+        Controls.AddRange(new Control[] { labelTime, labelRemaining, buttonLogout, buttonRequestTime });
+        FormBorderStyle = FormBorderStyle.None;
+        Name = "ClientMainForm";
+        StartPosition = FormStartPosition.CenterScreen;
+        Text = "GuardianEye - Session";
+        ResumeLayout(false);
     }
-
-    #endregion
-
-    private System.Windows.Forms.Label labelTime;
-    private System.Windows.Forms.Button buttonLogout;
-    private System.Windows.Forms.Button buttonRequestTime;
 }
